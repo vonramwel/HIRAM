@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "907948472204",
+    "project_id": "hiram-2640f",
+    "storage_bucket": "hiram-2640f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:907948472204:android:a15422e7693848163b88a9",
+        "android_client_info": {
+          "package_name": "com.example.hiram"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1Ghbr-UWeR5y3NJVnC6CNJZijYPDULfo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
