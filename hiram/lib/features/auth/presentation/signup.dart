@@ -129,12 +129,6 @@ class _SignUpPageState extends State<SignUpPage> {
                         //print(email);
                       }
                       registration();
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const HomePage()),
-                      );
                     },
                     child: const Text('Sign Up'),
                   ),

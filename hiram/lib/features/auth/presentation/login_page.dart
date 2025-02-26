@@ -1,66 +1,124 @@
 import 'package:flutter/material.dart';
 import 'signup.dart';
 import 'homepage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  String email = "", password = "";
+
+  TextEditingController mailcontroller = new TextEditingController();
+  TextEditingController passwordcontroller = new TextEditingController();
+
+  final _formkey = GlobalKey<FormState>();
+
+  userLogin() async {
+    try {
+      await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => HomePage()));
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: Colors.orangeAccent,
+            content: Text(
+              "No User Found for that Email",
+              style: TextStyle(fontSize: 18.0),
+            )));
+      } else if (e.code == 'wrong-password') {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: Colors.orangeAccent,
+            content: Text(
+              "Wrong Password Provided by User",
+              style: TextStyle(fontSize: 18.0),
+            )));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login Page'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const TextField(
-                decoration: InputDecoration(
-                  labelText: 'Username',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              const TextField(
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomePage()),
-                  );
-                },
-                child: const Text('Login'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SignUpPage()),
-                  );
-                },
-                child: const Text('Create Account'),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('Go Back'),
-              ),
-            ],
-          ),
+        appBar: AppBar(
+          title: const Text('Login Page'),
         ),
-      ),
-    );
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formkey,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextFormField(
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please Enter E-mail';
+                      }
+                      return null;
+                    },
+                    controller: mailcontroller,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: passwordcontroller,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please Enter Password';
+                      }
+                      return null;
+                    },
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_formkey.currentState!.validate()) {
+                        setState(() {
+                          email = mailcontroller.text;
+                          password = passwordcontroller.text;
+                        });
+                      }
+                      userLogin();
+                    },
+                    child: const Text('Login'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const SignUpPage()),
+                      );
+                    },
+                    child: const Text('Create Account'),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Go Back'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ));
   }
 }
