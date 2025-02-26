@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'signup.dart';
 import 'homepage.dart';
+import 'forgot_password.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
@@ -114,6 +115,16 @@ class _LoginPageState extends State<LoginPage> {
                       Navigator.pop(context);
                     },
                     child: const Text('Go Back'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const ForgotPassword()),
+                      );
+                    },
+                    child: const Text('Forgot Password'),
                   ),
                 ],
               ),
