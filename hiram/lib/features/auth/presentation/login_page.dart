@@ -3,6 +3,7 @@ import 'signup.dart';
 import 'homepage.dart';
 import 'forgot_password.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../service/auth.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -108,6 +109,12 @@ class _LoginPageState extends State<LoginPage> {
                       );
                     },
                     child: const Text('Create Account'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      AuthMethods().signInWithGoogle(context);
+                    },
+                    child: const Text('Sign In with Google'),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
