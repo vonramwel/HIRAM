@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'signup.dart';
 import 'homepage.dart';
 
 class LoginPage extends StatelessWidget {
@@ -39,6 +40,15 @@ class LoginPage extends StatelessWidget {
                   );
                 },
                 child: const Text('Login'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SignUpPage()),
+                  );
+                },
+                child: const Text('Create Account'),
               ),
               const SizedBox(height: 20),
               ElevatedButton(

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'features/auth/presentation/login_page.dart'; // Import login page
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // Import generated Firebase options
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform, // Use generated options
+  );
   runApp(const MyApp());
 }
 
