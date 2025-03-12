@@ -12,7 +12,20 @@
           "package_name": "com.example.hiram"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "907948472204-ugps51chdbosvinrcn4dbv509l1jc9h7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.hiram",
+            "certificate_hash": "46d3bfe9a2030212899c43b7f45a8cf3ec82b11b"
+          }
+        },
+        {
+          "client_id": "907948472204-omr0f3d04o3cckpn07po65g4i0ktf9jq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB1Ghbr-UWeR5y3NJVnC6CNJZijYPDULfo"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "907948472204-omr0f3d04o3cckpn07po65g4i0ktf9jq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "907948472204-tjddhj5gbnhqck7ohhefibvo2t57nlq9.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.hiram"
+              }
+            }
+          ]
         }
       }
     }
