@@ -1,0 +1,2 @@
+C:/Users/Von Ramwel Nicolas/Desktop/SP/HIRAM/hiram/android/app/.cxx/Debug/1b3g6c65/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/Von Ramwel Nicolas/Desktop/SP/HIRAM/hiram/android/app/.cxx/Debug/1b3g6c65/x86_64/CMakeFiles/rebuild_cache.dir
