@@ -7,4 +7,19 @@ class DatabaseMethods {
         .doc(userId)
         .set(userInfoMap);
   }
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<Map<String, dynamic>?> getUserData(String userId) async {
+    try {
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        return userDoc.data() as Map<String, dynamic>;
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+    }
+    return null;
+  }
 }
