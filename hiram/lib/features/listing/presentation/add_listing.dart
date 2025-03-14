@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../model/listing_model.dart';
 import '../service/listing_service.dart';
-import '../../auth/service/auth.dart'; // Import authentication service
+import '../../auth/service/auth.dart';
 
 class AddListingPage extends StatefulWidget {
   const AddListingPage({super.key});
@@ -13,12 +13,34 @@ class AddListingPage extends StatefulWidget {
 class _AddListingPageState extends State<AddListingPage> {
   final _formKey = GlobalKey<FormState>();
   final ListingService _listingService = ListingService();
-  final AuthMethods _authMethods = AuthMethods(); // Use the updated AuthMethods
+  final AuthMethods _authMethods = AuthMethods();
+
   String _title = '';
   String _description = '';
-  String _category = '';
-  String _type = 'Product'; // Default type
+  String _type = 'Products for Rent'; // Default type
+  String? _category; // Category now depends on type
   double _price = 0.0;
+
+  final Map<String, List<String>> _categories = {
+    'Products for Rent': [
+      'Electronics & Gadgets',
+      'Vehicles & Transportation',
+      'Home & Appliances',
+      'Furniture & Decor',
+      'Clothing & Accessories',
+      'Sports & Outdoor Equipment',
+      'Tools & Machinery',
+      'Musical Instruments',
+      'Books & Learning Materials',
+    ],
+    'Services for Hire': [
+      'Home Services',
+      'Event & Party Services',
+      'Personal Services',
+      'Professional & Technical Services',
+      'Vehicle & Transport Services',
+    ],
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -43,20 +65,30 @@ class _AddListingPageState extends State<AddListingPage> {
                     : null,
                 onSaved: (value) => _description = value!,
               ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Category'),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Enter a category' : null,
-                onSaved: (value) => _category = value!,
-              ),
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(labelText: 'Type'),
                 value: _type,
-                items: ['Product', 'Service']
+                items: _categories.keys
                     .map((type) =>
                         DropdownMenuItem(value: type, child: Text(type)))
                     .toList(),
-                onChanged: (value) => setState(() => _type = value!),
+                onChanged: (value) {
+                  setState(() {
+                    _type = value!;
+                    _category = null; // Reset category when type changes
+                  });
+                },
+              ),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Category'),
+                value: _category,
+                items: _categories[_type]!
+                    .map((category) => DropdownMenuItem(
+                        value: category, child: Text(category)))
+                    .toList(),
+                onChanged: (value) => setState(() => _category = value),
+                validator: (value) =>
+                    value == null ? 'Select a category' : null,
               ),
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Price'),
@@ -86,13 +118,13 @@ class _AddListingPageState extends State<AddListingPage> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      String userId = await _authMethods.getCurrentUserId(); // Fetch user ID
+      String userId = await _authMethods.getCurrentUserId();
 
       final newListing = Listing(
         id: '',
         title: _title,
         description: _description,
-        category: _category,
+        category: _category!,
         type: _type,
         price: _price,
         rating: null,
