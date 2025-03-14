@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'login_page.dart';
 import '../../listing/presentation/homepage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../service/database.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -26,6 +27,20 @@ class _SignUpPageState extends State<SignUpPage> {
         UserCredential userCredential = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(email: email, password: password);
 
+        User? user = userCredential.user;
+
+        if (user != null) {
+          // Store user details in Firestore
+          Map<String, dynamic> userInfoMap = {
+            "id": user.uid,
+            "email": user.email,
+            "name": namecontroller.text,
+            "imgUrl": null, // No image for email-password sign-up
+          };
+
+          await DatabaseMethods().addUser(user.uid, userInfoMap);
+        }
+
         if (!mounted) return; // Ensure widget is still in the tree
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -35,7 +50,7 @@ class _SignUpPageState extends State<SignUpPage> {
           ),
         ));
 
-        Navigator.push(
+        Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => HomePage()));
       } on FirebaseAuthException catch (e) {
         if (!mounted) return; // Ensure widget is still in the tree
