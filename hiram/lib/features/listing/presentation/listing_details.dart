@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../model/listing_model.dart';
+import '../../auth/service/database.dart'; // Import DatabaseMethods class
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -14,6 +15,7 @@ class ListingDetailsPage extends StatefulWidget {
 class _ListingDetailsPageState extends State<ListingDetailsPage> {
   String _postedBy = 'Loading...';
   bool _isLoading = true;
+  final DatabaseMethods _databaseMethods = DatabaseMethods();
 
   @override
   void initState() {
@@ -22,15 +24,15 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
   }
 
   Future<void> _fetchUserName() async {
-    try {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.listing.userId)
-          .get();
+    print('Fetching user for ID: ${widget.listing.userId}');
 
-      if (userDoc.exists && mounted) {
+    try {
+      Map<String, dynamic>? userData =
+          await _databaseMethods.getUserData(widget.listing.userId);
+
+      if (userData != null && mounted) {
         setState(() {
-          _postedBy = userDoc['name'] ?? 'Unknown User';
+          _postedBy = userData['name'] ?? 'Unknown User';
           _isLoading = false;
         });
       } else {
@@ -40,6 +42,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
         });
       }
     } catch (e) {
+      print('Error fetching user: $e');
       setState(() {
         _postedBy = 'Error loading user';
         _isLoading = false;
@@ -56,7 +59,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image placeholder (can be replaced with actual image URL from Firestore)
+            // Image placeholder
             Container(
               height: 200,
               width: double.infinity,

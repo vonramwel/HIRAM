@@ -13,7 +13,7 @@ class DatabaseMethods {
   Future<Map<String, dynamic>?> getUserData(String userId) async {
     try {
       DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(userId).get();
+          await _firestore.collection('User').doc(userId).get();
       if (userDoc.exists) {
         return userDoc.data() as Map<String, dynamic>;
       }
