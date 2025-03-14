@@ -18,14 +18,21 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildUserProfile(),
-            _buildCategories(),
-            _buildListingsSection('Products'),
-            _buildListingsSection('Services'),
-          ],
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context)
+                .size
+                .height, // Ensure it takes full height
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildUserProfile(),
+              _buildCategories(),
+              _buildListingsSection('Products'),
+              _buildListingsSection('Services'),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: _buildBottomNavBar(),
@@ -54,9 +61,15 @@ class _HomePageState extends State<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _infoCard('Number of Items Rented Out', '100'),
-              _infoCard('User Credibility Score', '90%'),
-              _infoCard('Number of Items Renting', '1'),
+              Flexible(
+                child: _infoCard('Number of Items Rented Out', '100'),
+              ),
+              Flexible(
+                child: _infoCard('User Credibility Score', '90%'),
+              ),
+              Flexible(
+                child: _infoCard('Number of Items Renting', '1'),
+              ),
             ],
           ),
         ],
@@ -108,7 +121,9 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       CircleAvatar(radius: 20, backgroundColor: Colors.grey),
                       const SizedBox(height: 5),
-                      const Text('Category', style: TextStyle(fontSize: 12)),
+                      const Text('Category',
+                          style: TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 );
@@ -121,58 +136,65 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildListingsSection(String title) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          StreamBuilder<List<Listing>>(
-            stream: _listingService.getListings(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return const Center(child: Text('No listings available.'));
-              }
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 300, // Adjust this height as needed
+              child: StreamBuilder<List<Listing>>(
+                stream: _listingService.getListings(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('No listings available.'));
+                  }
 
-              final listings = snapshot.data!
-                  .where((listing) =>
-                      (title == 'Products' &&
-                          listing.type == 'Products for Rent') ||
-                      (title == 'Services' &&
-                          listing.type != 'Products for Rent'))
-                  .toList();
+                  final listings = snapshot.data!
+                      .where((listing) =>
+                          (title == 'Products' &&
+                              listing.type == 'Products for Rent') ||
+                          (title == 'Services' &&
+                              listing.type != 'Products for Rent'))
+                      .toList();
 
-              if (listings.isEmpty) {
-                return const Center(child: Text('No listings available.'));
-              }
+                  if (listings.isEmpty) {
+                    return const Center(child: Text('No listings available.'));
+                  }
 
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 0.9,
-                ),
-                itemCount: listings.length,
-                itemBuilder: (context, index) {
-                  final listing = listings[index];
-                  return _listingCard(context, listing);
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 0.9,
+                    ),
+                    itemCount: listings.length,
+                    itemBuilder: (context, index) {
+                      final listing = listings[index];
+                      return _listingCard(context, listing);
+                    },
+                  );
                 },
-              );
-            },
-          ),
-        ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -240,6 +262,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildBottomNavBar() {
     return BottomNavigationBar(
+      backgroundColor: Colors.black, // Set a solid color (e.g., white)
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explore'),
