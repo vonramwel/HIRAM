@@ -5,6 +5,7 @@ import 'add_listing.dart';
 import 'listing_details.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth/service/database.dart'; // Import DatabaseMethods
+import 'bottom_navbar.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -64,7 +65,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
+      bottomNavigationBar: const BottomNavBar(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -287,27 +288,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return BottomNavigationBar(
-      backgroundColor: Colors.black, // Set a solid color (e.g., white)
-      selectedItemColor: Colors.black,
-      unselectedItemColor: Colors.black,
-      items: const [
-        BottomNavigationBarItem(
-            icon: Icon(Icons.home, color: Colors.black), label: 'Home'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.search, color: Colors.black), label: 'Explore'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart, color: Colors.black),
-            label: 'Transactions'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.message, color: Colors.black), label: 'Inbox'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.person, color: Colors.black), label: 'Profile'),
-      ],
     );
   }
 }
