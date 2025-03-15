@@ -3,6 +3,8 @@ import '../model/listing_model.dart';
 import '../service/listing_service.dart';
 import 'add_listing.dart';
 import 'listing_details.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../auth/service/database.dart'; // Import DatabaseMethods
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,6 +15,33 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ListingService _listingService = ListingService();
+  final DatabaseMethods _databaseMethods = DatabaseMethods();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  String _userName = 'Loading...';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserName();
+  }
+
+  Future<void> _fetchUserName() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      print(user.uid);
+      Map<String, dynamic>? userData =
+          await _databaseMethods.getUserData(user.uid);
+      if (userData != null && mounted) {
+        setState(() {
+          _userName = userData['name'] ?? 'Unknown User';
+        });
+      } else {
+        setState(() {
+          _userName = 'Unknown User';
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,8 +84,9 @@ class _HomePageState extends State<HomePage> {
         children: [
           const CircleAvatar(radius: 40, backgroundColor: Colors.grey),
           const SizedBox(height: 10),
-          const Text('Juan Dela Cruz',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(_userName,
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -263,13 +293,20 @@ class _HomePageState extends State<HomePage> {
   Widget _buildBottomNavBar() {
     return BottomNavigationBar(
       backgroundColor: Colors.black, // Set a solid color (e.g., white)
+      selectedItemColor: Colors.black,
+      unselectedItemColor: Colors.black,
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explore'),
         BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart), label: 'Transactions'),
-        BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Inbox'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+            icon: Icon(Icons.home, color: Colors.black), label: 'Home'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.search, color: Colors.black), label: 'Explore'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart, color: Colors.black),
+            label: 'Transactions'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.message, color: Colors.black), label: 'Inbox'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.person, color: Colors.black), label: 'Profile'),
       ],
     );
   }
