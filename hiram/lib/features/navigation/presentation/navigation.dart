@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../listing/widgets/user_profile.dart';
 import '../../listing/widgets/categories.dart';
 import '../../listing/widgets/listings_section.dart';
+import '../../listing/presentation/add_listing.dart';
 // import 'explore_page.dart';
 // import 'transactions_page.dart';
 // import 'inbox_page.dart';
@@ -55,11 +56,20 @@ class _NavigationState extends State<Navigation> {
         return SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               UserProfile(),
               Categories(),
               ListingsSection(title: 'Products'),
               ListingsSection(title: 'Services'),
+              FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AddListingPage()),
+                  );
+                },
+                child: const Icon(Icons.add),
+              ),
             ],
           ),
         );

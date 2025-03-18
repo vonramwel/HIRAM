@@ -23,12 +23,13 @@ class _ListingsSectionState extends State<ListingsSection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.title,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              widget.title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 10),
             SizedBox(
-              height: 300,
+              height: 250, // Adjusted height for horizontal cards
               child: StreamBuilder<List<Listing>>(
                 stream: _listingService.getListings(),
                 builder: (context, snapshot) {
@@ -54,20 +55,17 @@ class _ListingsSectionState extends State<ListingsSection> {
                     return const Center(child: Text('No listings available.'));
                   }
 
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 0.9,
-                    ),
+                  return ListView.builder(
+                    scrollDirection:
+                        Axis.horizontal, // 🔹 Make it scroll horizontally
                     itemCount: listings.length,
                     itemBuilder: (context, index) {
                       final listing = listings[index];
-                      return _listingCard(context, listing);
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                            right: 10.0), // Spacing between items
+                        child: _listingCard(context, listing),
+                      );
                     },
                   );
                 },
@@ -89,38 +87,46 @@ class _ListingsSectionState extends State<ListingsSection> {
           ),
         );
       },
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(10)),
-                child: Image.network(
-                  'https://via.placeholder.com/150',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
+      child: SizedBox(
+        width: 200, // 🔹 Fixed width for horizontal layout
+        child: Card(
+          elevation: 4,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(10)),
+                  child: Image.network(
+                    'https://via.placeholder.com/150',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    listing.title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      listing.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize:
+                            14, // 🔹 Slightly reduced font size for better fit
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1, // 🔹 Prevents overflow
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
