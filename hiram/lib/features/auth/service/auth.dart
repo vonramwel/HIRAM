@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 import 'database.dart';
-import '../../listing/presentation/homepage.dart';
+import '../../navigation/presentation/navigation.dart'; // Import navigation.dart
 
 class AuthMethods {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -46,7 +46,7 @@ class AuthMethods {
 
         await DatabaseMethods().addUser(userDetails.uid, userInfoMap).then((_) {
           Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (context) => HomePage()));
+              context, MaterialPageRoute(builder: (context) => Navigation()));
         });
       }
     }

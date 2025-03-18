@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import '../../listing/presentation/homepage.dart';
+import '../../navigation/presentation/navigation.dart'; // Import navigation.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import '../service/database.dart';
 
@@ -51,7 +51,7 @@ class _SignUpPageState extends State<SignUpPage> {
         ));
 
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => HomePage()));
+            context, MaterialPageRoute(builder: (context) => Navigation()));
       } on FirebaseAuthException catch (e) {
         if (!mounted) return; // Ensure widget is still in the tree
 

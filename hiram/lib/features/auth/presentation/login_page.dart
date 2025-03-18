@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'signup.dart';
-import '../../listing/presentation/homepage.dart';
+//import '../../listing/presentation/homepage.dart';
 import 'forgot_password.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../service/auth.dart';
+import '../../navigation/presentation/navigation.dart'; // Import navigation.dart
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -25,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
       await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
       Navigator.push(
-          context, MaterialPageRoute(builder: (context) => HomePage()));
+          context, MaterialPageRoute(builder: (context) => Navigation()));
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
