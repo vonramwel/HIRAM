@@ -29,7 +29,7 @@ class _ListingsSectionState extends State<ListingsSection> {
             ),
             const SizedBox(height: 10),
             SizedBox(
-              height: 250, // Adjusted height for horizontal cards
+              height: 250,
               child: StreamBuilder<List<Listing>>(
                 stream: _listingService.getListings(),
                 builder: (context, snapshot) {
@@ -56,14 +56,12 @@ class _ListingsSectionState extends State<ListingsSection> {
                   }
 
                   return ListView.builder(
-                    scrollDirection:
-                        Axis.horizontal, // 🔹 Make it scroll horizontally
+                    scrollDirection: Axis.horizontal,
                     itemCount: listings.length,
                     itemBuilder: (context, index) {
                       final listing = listings[index];
                       return Padding(
-                        padding: const EdgeInsets.only(
-                            right: 10.0), // Spacing between items
+                        padding: const EdgeInsets.only(right: 10.0),
                         child: _listingCard(context, listing),
                       );
                     },
@@ -78,6 +76,10 @@ class _ListingsSectionState extends State<ListingsSection> {
   }
 
   Widget _listingCard(BuildContext context, Listing listing) {
+    String imageUrl = (listing.images.isNotEmpty)
+        ? listing.images.first
+        : 'https://via.placeholder.com/150';
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -88,7 +90,7 @@ class _ListingsSectionState extends State<ListingsSection> {
         );
       },
       child: SizedBox(
-        width: 200, // 🔹 Fixed width for horizontal layout
+        width: 200,
         child: Card(
           elevation: 4,
           shape:
@@ -101,9 +103,14 @@ class _ListingsSectionState extends State<ListingsSection> {
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(10)),
                   child: Image.network(
-                    'https://via.placeholder.com/150',
+                    imageUrl,
                     fit: BoxFit.cover,
                     width: double.infinity,
+                    errorBuilder: (context, error, stackTrace) => Image.network(
+                      'https://via.placeholder.com/150',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
                   ),
                 ),
               ),
@@ -116,11 +123,10 @@ class _ListingsSectionState extends State<ListingsSection> {
                       listing.title,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize:
-                            14, // 🔹 Slightly reduced font size for better fit
+                        fontSize: 14,
                       ),
                       overflow: TextOverflow.ellipsis,
-                      maxLines: 1, // 🔹 Prevents overflow
+                      maxLines: 1,
                     ),
                   ],
                 ),

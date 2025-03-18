@@ -8,6 +8,7 @@ class Listing {
   double price;
   String userId; // User who posted the listing
   DateTime timestamp; // Time when the listing was created
+  List<String> images; // List of image URLs
 
   Listing({
     required this.id,
@@ -19,6 +20,7 @@ class Listing {
     required this.price,
     required this.userId,
     required this.timestamp,
+    required this.images, // Initialize images
   });
 
   // Convert Listing to JSON
@@ -32,6 +34,7 @@ class Listing {
         "price": price,
         "userId": userId,
         "timestamp": timestamp.toIso8601String(),
+        "images": images, // Store image URLs
       };
 
   // Create Listing from JSON
@@ -45,5 +48,6 @@ class Listing {
         price: json["price"].toDouble(),
         userId: json["userId"],
         timestamp: DateTime.parse(json["timestamp"]),
+        images: List<String>.from(json["images"] ?? []), // Retrieve images
       );
 }

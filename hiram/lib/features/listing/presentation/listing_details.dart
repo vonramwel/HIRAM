@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import '../model/listing_model.dart';
 import '../../auth/service/database.dart'; // Import DatabaseMethods class
 
@@ -25,7 +26,6 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
 
   Future<void> _fetchUserName() async {
     print('Fetching user for ID: ${widget.listing.userId}');
-
     try {
       Map<String, dynamic>? userData =
           await _databaseMethods.getUserData(widget.listing.userId);
@@ -59,16 +59,41 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image placeholder
-            Container(
-              height: 200,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.image, size: 100, color: Colors.grey),
-            ),
+            // Display multiple images if available
+            widget.listing.images.isNotEmpty
+                ? CarouselSlider(
+                    options: CarouselOptions(
+                      height: 250,
+                      enlargeCenterPage: true,
+                      enableInfiniteScroll: true,
+                      autoPlay: true,
+                    ),
+                    items: widget.listing.images.map((imageUrl) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          imageUrl,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Image.network(
+                            'https://via.placeholder.com/150',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  )
+                : Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child:
+                        const Icon(Icons.image, size: 100, color: Colors.grey),
+                  ),
             const SizedBox(height: 20),
 
             Text(
@@ -110,7 +135,6 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
             ),
             const SizedBox(height: 20),
 
-            // Button placeholder for future functionality
             ElevatedButton(
               onPressed: () {
                 // Placeholder action: Can be used for messaging/contact

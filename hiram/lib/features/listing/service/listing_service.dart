@@ -1,13 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../model/listing_model.dart'; // Ensure you have a Listing model
+import 'package:firebase_storage/firebase_storage.dart';
+import '../model/listing_model.dart';
+import 'dart:io';
 
 class ListingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Future<void> addListing(Listing listing) async {
     final docRef = _firestore.collection('listings').doc();
     listing.id = docRef.id; // Auto-generate ID
     await docRef.set(listing.toJson());
+  }
+
+  // Uploads image to Firebase Storage and returns the URL
+  Future<String> uploadImage(File image, String listingId) async {
+    try {
+      final ref = _storage.ref().child(
+          'listings/$listingId/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await ref.putFile(image);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      throw Exception("Image upload failed: $e");
+    }
   }
 
   Stream<List<Listing>> getListings() {
