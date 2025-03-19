@@ -28,8 +28,9 @@ class TransactionModel {
       'listingId': listingId,
       'renterId': renterId,
       'ownerId': ownerId,
-      'startDate': startDate,
-      'endDate': endDate,
+      'startDate':
+          Timestamp.fromDate(startDate), // Ensure Firestore compatibility
+      'endDate': Timestamp.fromDate(endDate),
       'paymentMethod': paymentMethod,
       'notes': notes,
       'status': status,
@@ -37,13 +38,14 @@ class TransactionModel {
     };
   }
 
-  /// **Fix: Add this method to convert Firestore data into a TransactionModel**
+  /// **Convert Firestore data into a TransactionModel**
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
     return TransactionModel(
       listingId: map['listingId'] as String,
       renterId: map['renterId'] as String,
       ownerId: map['ownerId'] as String,
-      startDate: (map['startDate'] as Timestamp).toDate(),
+      startDate: (map['startDate'] as Timestamp)
+          .toDate(), // Convert Firestore Timestamp to DateTime
       endDate: (map['endDate'] as Timestamp).toDate(),
       paymentMethod: map['paymentMethod'] as String,
       notes: map['notes'] as String,

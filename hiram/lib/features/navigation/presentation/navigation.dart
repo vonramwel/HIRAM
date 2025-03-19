@@ -81,7 +81,9 @@ class _NavigationState extends State<Navigation> {
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           UserProfile(),
+          Text('Lender'),
           TransactionsSection(title: 'Transactions as Lender'),
+          Text('Renter'),
           TransactionsSection(title: 'Transactions as Renter'),
         ]));
       case 2:
