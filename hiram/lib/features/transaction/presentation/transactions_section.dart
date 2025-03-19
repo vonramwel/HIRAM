@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../auth/service/auth.dart';
 import '../model/transaction_model.dart';
+import 'transaction_details.dart';
 
 class TransactionsSection extends StatefulWidget {
   final String title;
@@ -17,6 +18,15 @@ class _TransactionsSectionState extends State<TransactionsSection> {
   @override
   void initState() {
     super.initState();
+  }
+
+  void _navigateToTransactionDetails(TransactionModel transaction) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransactionDetails(transaction: transaction),
+      ),
+    );
   }
 
   Widget _buildTransactionCard(TransactionModel transaction) {
@@ -45,29 +55,32 @@ class _TransactionsSectionState extends State<TransactionsSection> {
 
         final String imageUrl = (images != null && images.isNotEmpty)
             ? images[0] as String
-            : 'https://via.placeholder.com/150'; // Placeholder if no image/ Placeholder if no image
+            : 'https://via.placeholder.com/150';
 
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: ListTile(
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                imageUrl,
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
+        return GestureDetector(
+          onTap: () => _navigateToTransactionDetails(transaction),
+          child: Card(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: ListTile(
+              leading: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  imageUrl,
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
-            title: Text("Payment: ${transaction.paymentMethod}"),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Start: ${transaction.startDate.toLocal()}"),
-                Text("End: ${transaction.endDate.toLocal()}"),
-                Text("Notes: ${transaction.notes}"),
-                Text("Status: ${transaction.status}"),
-              ],
+              title: Text("Payment: ${transaction.paymentMethod}"),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Start: ${transaction.startDate.toLocal()}"),
+                  Text("End: ${transaction.endDate.toLocal()}"),
+                  Text("Notes: ${transaction.notes}"),
+                  Text("Status: ${transaction.status}"),
+                ],
+              ),
             ),
           ),
         );
@@ -123,7 +136,6 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                               doc.data() as Map<String, dynamic>))
                           .toList();
 
-                      // Filter transactions based on the user role
                       final filteredTransactions = transactions
                           .where((t) =>
                               (widget.title == 'Transactions as Lender' &&

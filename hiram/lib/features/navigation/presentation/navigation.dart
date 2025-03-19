@@ -77,6 +77,8 @@ class _NavigationState extends State<Navigation> {
           ),
         );
       case 1:
+        return const Categories();
+      case 2:
         return SingleChildScrollView(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -86,8 +88,6 @@ class _NavigationState extends State<Navigation> {
           Text('Renter'),
           TransactionsSection(title: 'Transactions as Renter'),
         ]));
-      case 2:
-        return const Categories();
       case 3:
         return const ListingsSection(title: 'Products');
       case 4:

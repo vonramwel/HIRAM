@@ -8,7 +8,7 @@ class TransactionModel {
   final DateTime endDate;
   final String paymentMethod;
   final String notes;
-  final String status;
+  String status;
   final Timestamp timestamp;
 
   TransactionModel({
