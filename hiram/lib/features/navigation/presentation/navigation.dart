@@ -91,7 +91,7 @@ class _NavigationState extends State<Navigation> {
       case 3:
         return const ListingsSection(title: 'Products');
       case 4:
-        return ListingsSection(title: 'Services');
+        return const UserProfile();
       default:
         return const Center(child: Text('Page not found'));
     }
