@@ -4,7 +4,7 @@ import '../../listing/widgets/categories.dart';
 import '../../listing/widgets/listings_section.dart';
 import '../../listing/presentation/add_listing.dart';
 // import 'explore_page.dart';
-// import 'transactions_page.dart';
+import '../../transaction/presentation/transactions_section.dart';
 // import 'inbox_page.dart';
 // import 'profile_page.dart';
 
@@ -77,7 +77,13 @@ class _NavigationState extends State<Navigation> {
           ),
         );
       case 1:
-        return const UserProfile();
+        return SingleChildScrollView(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          UserProfile(),
+          TransactionsSection(title: 'Transactions as Lender'),
+          TransactionsSection(title: 'Transactions as Renter'),
+        ]));
       case 2:
         return const Categories();
       case 3:

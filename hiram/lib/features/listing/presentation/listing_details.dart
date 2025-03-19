@@ -2,7 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../model/listing_model.dart';
-import '../../auth/service/database.dart'; // Import DatabaseMethods class
+import '../../auth/service/database.dart';
+import '../../transaction/presentation/rent_screen.dart'; // Import the rent request screen
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -25,7 +26,6 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
   }
 
   Future<void> _fetchUserName() async {
-    print('Fetching user for ID: ${widget.listing.userId}');
     try {
       Map<String, dynamic>? userData =
           await _databaseMethods.getUserData(widget.listing.userId);
@@ -42,7 +42,6 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
         });
       }
     } catch (e) {
-      print('Error fetching user: $e');
       setState(() {
         _postedBy = 'Error loading user';
         _isLoading = false;
@@ -59,7 +58,6 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Display multiple images if available
             widget.listing.images.isNotEmpty
                 ? CarouselSlider(
                     options: CarouselOptions(
@@ -95,25 +93,21 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                         const Icon(Icons.image, size: 100, color: Colors.grey),
                   ),
             const SizedBox(height: 20),
-
             Text(
               widget.listing.title,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-
             Text(
               'Category: ${widget.listing.category}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 10),
-
             Text(
               'Type: ${widget.listing.type}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 10),
-
             Text(
               'Price: ₱${widget.listing.price.toStringAsFixed(2)}',
               style: const TextStyle(
@@ -122,24 +116,27 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                   color: Colors.green),
             ),
             const SizedBox(height: 20),
-
             Text(
               widget.listing.description,
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 20),
-
             Text(
               _isLoading ? 'Loading user...' : 'Posted by: $_postedBy',
               style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
             ),
             const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: () {
-                // Placeholder action: Can be used for messaging/contact
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        RentRequestScreen(listing: widget.listing),
+                  ),
+                );
               },
-              child: const Text("Contact Seller"),
+              child: const Text("Rent"),
             ),
           ],
         ),
