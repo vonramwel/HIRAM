@@ -138,10 +138,11 @@ class _TransactionsSectionState extends State<TransactionsSection> {
 
                       final filteredTransactions = transactions
                           .where((t) =>
-                              (widget.title == 'Transactions as Lender' &&
-                                  t.ownerId == _userId) ||
-                              (widget.title == 'Transactions as Renter' &&
-                                  t.renterId == _userId))
+                              ((widget.title == 'Transactions as Lender' &&
+                                      t.ownerId == _userId &&
+                                      t.status != 'Cancelled') ||
+                                  (widget.title == 'Transactions as Renter' &&
+                                      t.renterId == _userId)))
                           .toList();
 
                       if (filteredTransactions.isEmpty) {
