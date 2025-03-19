@@ -23,6 +23,7 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
   final TransactionService _transactionService = TransactionService();
 
   final List<String> _paymentMethods = ['GCash', 'Bank Transfer', 'Cash'];
+  String? _transactionId;
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     DateTime initialDate =
@@ -65,7 +66,12 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
       return;
     }
 
+    // Fetch the transactionId after adding the transaction
+    String? transactionId =
+        await _transactionService.getTransactionId(widget.listing.id, userId);
+
     final transaction = TransactionModel(
+      transactionId: transactionId ?? '',
       listingId: widget.listing.id,
       renterId: userId,
       ownerId: widget.listing.userId,
@@ -78,11 +84,12 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
     );
 
     await _transactionService.addTransaction(transaction);
-
     setState(() {
+      _transactionId = transactionId;
       _isSubmitting = false;
     });
 
+    print("Transaction ID: $_transactionId"); // Debugging
     Navigator.pop(context);
   }
 
@@ -127,6 +134,9 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
                 maxLines: 3,
               ),
               const SizedBox(height: 20),
+              if (_transactionId != null)
+                Text(
+                    "Transaction ID: $_transactionId"), // Display transactionId
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitRequest,
                 child: _isSubmitting

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TransactionModel {
+  final String transactionId; // Added transactionId
   final String listingId;
   final String renterId;
   final String ownerId;
@@ -12,6 +13,7 @@ class TransactionModel {
   final Timestamp timestamp;
 
   TransactionModel({
+    required this.transactionId, // Added transactionId
     required this.listingId,
     required this.renterId,
     required this.ownerId,
@@ -25,11 +27,11 @@ class TransactionModel {
 
   Map<String, dynamic> toMap() {
     return {
+      'transactionId': transactionId, // Added transactionId
       'listingId': listingId,
       'renterId': renterId,
       'ownerId': ownerId,
-      'startDate':
-          Timestamp.fromDate(startDate), // Ensure Firestore compatibility
+      'startDate': Timestamp.fromDate(startDate),
       'endDate': Timestamp.fromDate(endDate),
       'paymentMethod': paymentMethod,
       'notes': notes,
@@ -38,14 +40,13 @@ class TransactionModel {
     };
   }
 
-  /// **Convert Firestore data into a TransactionModel**
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
     return TransactionModel(
+      transactionId: map['transactionId'] as String, // Added transactionId
       listingId: map['listingId'] as String,
       renterId: map['renterId'] as String,
       ownerId: map['ownerId'] as String,
-      startDate: (map['startDate'] as Timestamp)
-          .toDate(), // Convert Firestore Timestamp to DateTime
+      startDate: (map['startDate'] as Timestamp).toDate(),
       endDate: (map['endDate'] as Timestamp).toDate(),
       paymentMethod: map['paymentMethod'] as String,
       notes: map['notes'] as String,

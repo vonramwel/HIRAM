@@ -31,6 +31,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
   Future<void> _updateTransactionStatus(String newStatus) async {
     await FirebaseFirestore.instance
         .collection('transactions')
+        .where('transactionId', isEqualTo: widget.transaction.transactionId)
         .where('listingId', isEqualTo: widget.transaction.listingId)
         .where('renterId', isEqualTo: widget.transaction.renterId)
         .get()
