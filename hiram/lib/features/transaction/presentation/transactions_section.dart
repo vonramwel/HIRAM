@@ -14,6 +14,7 @@ class TransactionsSection extends StatefulWidget {
 
 class _TransactionsSectionState extends State<TransactionsSection> {
   String? _userId;
+  String _selectedStatus = 'Pending'; // Default filter
 
   @override
   void initState() {
@@ -98,6 +99,32 @@ class _TransactionsSectionState extends State<TransactionsSection> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 10),
+            ToggleButtons(
+              isSelected: [
+                _selectedStatus == 'Pending',
+                _selectedStatus == 'In Progress',
+                _selectedStatus == 'Completed',
+                _selectedStatus == 'Cancelled'
+              ],
+              onPressed: (index) {
+                setState(() {
+                  _selectedStatus = [
+                    'Pending',
+                    'In Progress',
+                    'Completed',
+                    'Cancelled'
+                  ][index];
+                });
+              },
+              children: const [
+                Padding(padding: EdgeInsets.all(8.0), child: Text('Pending')),
+                Padding(
+                    padding: EdgeInsets.all(8.0), child: Text('In Progress')),
+                Padding(padding: EdgeInsets.all(8.0), child: Text('Completed')),
+                Padding(padding: EdgeInsets.all(8.0), child: Text('Cancelled')),
+              ],
+            ),
+            const SizedBox(height: 10),
             SizedBox(
               height: 250,
               child: FutureBuilder<String>(
@@ -136,14 +163,28 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                               doc.data() as Map<String, dynamic>))
                           .toList();
 
-                      final filteredTransactions = transactions
-                          .where((t) =>
-                              ((widget.title == 'Transactions as Lender' &&
-                                      t.ownerId == _userId &&
-                                      t.status != 'Cancelled') ||
-                                  (widget.title == 'Transactions as Renter' &&
-                                      t.renterId == _userId)))
-                          .toList();
+                      final filteredTransactions = transactions.where((t) {
+                        bool isUserTransaction =
+                            ((widget.title == 'Transactions as Lender' &&
+                                    t.ownerId == _userId) ||
+                                (widget.title == 'Transactions as Renter' &&
+                                    t.renterId == _userId));
+                        if (!isUserTransaction) return false;
+
+                        switch (_selectedStatus) {
+                          case 'Pending':
+                            return t.status == 'Pending';
+                          case 'In Progress':
+                            return t.status == 'Approved';
+                          case 'Completed':
+                            return t.status == 'Completed';
+                          case 'Cancelled':
+                            return t.status == 'Cancelled' ||
+                                t.status == 'Disapproved';
+                          default:
+                            return false;
+                        }
+                      }).toList();
 
                       if (filteredTransactions.isEmpty) {
                         return const Center(

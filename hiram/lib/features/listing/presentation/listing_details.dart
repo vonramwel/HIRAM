@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../model/listing_model.dart';
 import '../../auth/service/database.dart';
-import '../../transaction/presentation/rent_screen.dart'; // Import the rent request screen
+import '../../transaction/presentation/rent_request_screen.dart'; // Import the rent request screen
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
