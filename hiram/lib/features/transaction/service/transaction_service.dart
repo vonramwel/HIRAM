@@ -45,20 +45,42 @@ class TransactionService {
   }
 
   Future<bool> validateTransactionCode(
-      String transactionId, String inputCode) async {
+      String transactionId, String inputCode, String action) async {
     DocumentSnapshot transactionSnapshot =
         await _firestore.collection('transactions').doc(transactionId).get();
 
     if (transactionSnapshot.exists) {
       String? storedCode = transactionSnapshot['transactionCode'];
-      if (storedCode == inputCode) {
+      if (storedCode == inputCode && action == 'Approved') {
         await _firestore.collection('transactions').doc(transactionId).update({
           'status': 'Lent',
           'transactionCode': '', // Reset transaction code
         });
         return true;
       }
+      if (storedCode == inputCode && action == 'Lent') {
+        await _firestore.collection('transactions').doc(transactionId).update({
+          'status': 'Completed',
+          'transactionCode': '', // Reset transaction code
+        });
+        return true;
+      }
     }
     return false;
+  }
+
+  Future<void> updateTransactionStatus(String transactionId, String listingId,
+      String renterId, String newStatus) async {
+    await _firestore
+        .collection('transactions')
+        .where('transactionId', isEqualTo: transactionId)
+        .where('listingId', isEqualTo: listingId)
+        .where('renterId', isEqualTo: renterId)
+        .get()
+        .then((snapshot) {
+      for (var doc in snapshot.docs) {
+        doc.reference.update({'status': newStatus});
+      }
+    });
   }
 }

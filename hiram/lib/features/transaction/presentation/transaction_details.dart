@@ -73,10 +73,19 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           ElevatedButton(
             onPressed: () async {
               bool isValid = await _transactionService.validateTransactionCode(
-                  widget.transaction.transactionId, codeController.text);
-              if (isValid) {
+                  widget.transaction.transactionId,
+                  codeController.text,
+                  widget.transaction.status);
+              if (isValid && widget.transaction.status == "Approved") {
                 setState(() {
                   widget.transaction.status = "Lent";
+                });
+                Navigator.pop(context);
+              }
+
+              if (isValid && widget.transaction.status == "Lent") {
+                setState(() {
+                  widget.transaction.status = "Completed";
                 });
                 Navigator.pop(context);
               }
@@ -88,13 +97,29 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     );
   }
 
+  void _updateTransactionStatus(String newStatus) async {
+    await _transactionService.updateTransactionStatus(
+      widget.transaction.transactionId,
+      widget.transaction.listingId,
+      widget.transaction.renterId,
+      newStatus,
+    );
+    setState(() {
+      widget.transaction.status = newStatus;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isOwner = _userId == widget.transaction.ownerId;
     bool isRenter = _userId == widget.transaction.renterId;
     bool isApproved = widget.transaction.status == "Approved";
+    bool isLent = widget.transaction.status == "Lent";
+    bool isCompleted = widget.transaction.status == "Completed";
     bool isStartDateToday =
         widget.transaction.startDate.toLocal().day == DateTime.now().day;
+    bool isEndDateToday =
+        widget.transaction.endDate.toLocal().day == DateTime.now().day;
 
     return Scaffold(
       appBar: AppBar(title: const Text("Transaction Details")),
@@ -119,6 +144,36 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                 Text("Generated Code: $_generatedCode"),
             ],
             if (isRenter && isApproved && isStartDateToday) ...[
+              ElevatedButton(
+                onPressed: _showInputDialog,
+                child: const Text("Input Code"),
+              ),
+            ],
+            if (isOwner && !isApproved && !isLent && !isCompleted) ...[
+              ElevatedButton(
+                onPressed: () => _updateTransactionStatus("Approved"),
+                child: const Text("Approve"),
+              ),
+              ElevatedButton(
+                onPressed: () => _updateTransactionStatus("Disapproved"),
+                child: const Text("Disapprove"),
+              ),
+            ],
+            if (isRenter && !isApproved && !isLent && !isCompleted) ...[
+              ElevatedButton(
+                onPressed: () => _updateTransactionStatus("Cancelled"),
+                child: const Text("Cancel Transaction"),
+              ),
+            ],
+            if (isRenter && isLent && isEndDateToday) ...[
+              ElevatedButton(
+                onPressed: _generateTransactionCode,
+                child: const Text("Generate Transaction Code"),
+              ),
+              if (_generatedCode != null)
+                Text("Generated Code: $_generatedCode"),
+            ],
+            if (isOwner && isLent && isEndDateToday) ...[
               ElevatedButton(
                 onPressed: _showInputDialog,
                 child: const Text("Input Code"),

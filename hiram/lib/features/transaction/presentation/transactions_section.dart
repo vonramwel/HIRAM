@@ -175,7 +175,7 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                           case 'Pending':
                             return t.status == 'Pending';
                           case 'In Progress':
-                            return t.status == 'Approved';
+                            return t.status == 'Approved' || t.status == 'Lent';
                           case 'Completed':
                             return t.status == 'Completed';
                           case 'Cancelled':
