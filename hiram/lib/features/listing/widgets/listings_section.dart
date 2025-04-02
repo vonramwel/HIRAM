@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../model/listing_model.dart';
 import '../service/listing_service.dart';
+import '../../auth/service/auth.dart'; // Import AuthMethods for user authentication
 import '../presentation/listing_details.dart';
 
 class ListingsSection extends StatefulWidget {
@@ -30,39 +31,60 @@ class _ListingsSectionState extends State<ListingsSection> {
             const SizedBox(height: 10),
             SizedBox(
               height: 250,
-              child: StreamBuilder<List<Listing>>(
-                stream: _listingService.getListings(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+              child: FutureBuilder<String>(
+                future: AuthMethods().getCurrentUserId(),
+                builder: (context, userSnapshot) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No listings available.'));
-                  }
-
-                  final listings = snapshot.data!
-                      .where((listing) =>
-                          (widget.title == 'Products' &&
-                              listing.type == 'Products for Rent') ||
-                          (widget.title == 'Services' &&
-                              listing.type != 'Products for Rent'))
-                      .toList();
-
-                  if (listings.isEmpty) {
-                    return const Center(child: Text('No listings available.'));
+                  if (userSnapshot.hasError ||
+                      !userSnapshot.hasData ||
+                      userSnapshot.data!.isEmpty) {
+                    return const Center(
+                        child: Text('Error fetching user data.'));
                   }
 
-                  return ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: listings.length,
-                    itemBuilder: (context, index) {
-                      final listing = listings[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 10.0),
-                        child: _listingCard(context, listing),
+                  final String currentUserId = userSnapshot.data!;
+
+                  return StreamBuilder<List<Listing>>(
+                    stream: _listingService.getListings(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      }
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Center(
+                            child: Text('No listings available.'));
+                      }
+
+                      // Filter listings: Exclude those posted by the current user
+                      final listings = snapshot.data!
+                          .where((listing) =>
+                              listing.userId != currentUserId &&
+                              ((widget.title == 'Products' &&
+                                      listing.type == 'Products for Rent') ||
+                                  (widget.title == 'Services' &&
+                                      listing.type != 'Products for Rent')))
+                          .toList();
+
+                      if (listings.isEmpty) {
+                        return const Center(
+                            child: Text('No listings available.'));
+                      }
+
+                      return ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: listings.length,
+                        itemBuilder: (context, index) {
+                          final listing = listings[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 10.0),
+                            child: _listingCard(context, listing),
+                          );
+                        },
                       );
                     },
                   );
