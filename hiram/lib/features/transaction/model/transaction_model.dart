@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TransactionModel {
-  final String transactionId; // Added transactionId
+  final String transactionId;
   final String listingId;
   final String renterId;
   final String ownerId;
@@ -11,9 +11,11 @@ class TransactionModel {
   final String notes;
   String status;
   final Timestamp timestamp;
+  String transactionCode;
+  double? transactionRating;
 
   TransactionModel({
-    required this.transactionId, // Added transactionId
+    required this.transactionId,
     required this.listingId,
     required this.renterId,
     required this.ownerId,
@@ -23,11 +25,13 @@ class TransactionModel {
     required this.notes,
     required this.status,
     required this.timestamp,
+    this.transactionCode = '',
+    this.transactionRating,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'transactionId': transactionId, // Added transactionId
+      'transactionId': transactionId,
       'listingId': listingId,
       'renterId': renterId,
       'ownerId': ownerId,
@@ -37,12 +41,14 @@ class TransactionModel {
       'notes': notes,
       'status': status,
       'timestamp': timestamp,
+      'transactionCode': transactionCode,
+      'transactionRating': transactionRating,
     };
   }
 
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
     return TransactionModel(
-      transactionId: map['transactionId'] as String, // Added transactionId
+      transactionId: map['transactionId'] as String,
       listingId: map['listingId'] as String,
       renterId: map['renterId'] as String,
       ownerId: map['ownerId'] as String,
@@ -52,6 +58,8 @@ class TransactionModel {
       notes: map['notes'] as String,
       status: map['status'] as String,
       timestamp: map['timestamp'] as Timestamp,
+      transactionCode: map['transactionCode'] ?? '',
+      transactionRating: (map['transactionRating'] as num?)?.toDouble(),
     );
   }
 }

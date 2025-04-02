@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../auth/service/auth.dart';
 import '../model/transaction_model.dart';
@@ -30,5 +31,34 @@ class TransactionService {
           .docs.first.id; // Return the document ID (transactionId)
     }
     return null; // Return null if no transaction is found
+  }
+
+  Future<String> generateTransactionCode(String transactionId) async {
+    final random = Random();
+    String generatedCode = (100000 + random.nextInt(900000)).toString();
+
+    await _firestore.collection('transactions').doc(transactionId).update({
+      'transactionCode': generatedCode,
+    });
+
+    return generatedCode;
+  }
+
+  Future<bool> validateTransactionCode(
+      String transactionId, String inputCode) async {
+    DocumentSnapshot transactionSnapshot =
+        await _firestore.collection('transactions').doc(transactionId).get();
+
+    if (transactionSnapshot.exists) {
+      String? storedCode = transactionSnapshot['transactionCode'];
+      if (storedCode == inputCode) {
+        await _firestore.collection('transactions').doc(transactionId).update({
+          'status': 'Lent',
+          'transactionCode': '', // Reset transaction code
+        });
+        return true;
+      }
+    }
+    return false;
   }
 }
