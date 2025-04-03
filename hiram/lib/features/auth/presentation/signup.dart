@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import '../../navigation/presentation/navigation.dart'; // Import navigation.dart
-import 'package:firebase_auth/firebase_auth.dart';
-import '../service/database.dart';
+import '../../navigation/presentation/navigation.dart';
+import '../service/auth.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -12,66 +11,50 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  String email = "", password = "", name = "";
-  TextEditingController namecontroller = new TextEditingController();
-  TextEditingController passwordcontroller = new TextEditingController();
-  TextEditingController mailcontroller = new TextEditingController();
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController reenterPasswordController =
+      TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
-  final _formkey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
+  bool _obscurePassword = true;
+  bool _obscureReenterPassword = true;
 
-  registration() async {
-    if (password.isNotEmpty &&
-        namecontroller.text.isNotEmpty &&
-        mailcontroller.text.isNotEmpty) {
-      try {
-        UserCredential userCredential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(email: email, password: password);
+  void _registerUser() async {
+    if (_formKey.currentState!.validate()) {
+      String email = emailController.text.trim();
+      String fullName =
+          "${firstNameController.text} ${lastNameController.text}";
+      String password = passwordController.text.trim();
+      String reenterPassword = reenterPasswordController.text.trim();
 
-        User? user = userCredential.user;
-
-        if (user != null) {
-          // Store user details in Firestore
-          Map<String, dynamic> userInfoMap = {
-            "id": user.uid,
-            "email": user.email,
-            "name": namecontroller.text,
-            "imgUrl": null, // No image for email-password sign-up
-          };
-
-          await DatabaseMethods().addUser(user.uid, userInfoMap);
-        }
-
-        if (!mounted) return; // Ensure widget is still in the tree
-
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            "Registered Successfully",
-            style: TextStyle(fontSize: 20.0),
+      if (password != reenterPassword) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text(
+              "Passwords do not match",
+              style: TextStyle(fontSize: 18.0),
+            ),
           ),
-        ));
+        );
+        return;
+      }
 
+      bool success = await AuthMethods().registerUser(
+        context,
+        email,
+        fullName,
+        password,
+      );
+
+      if (success) {
         Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => Navigation()));
-      } on FirebaseAuthException catch (e) {
-        if (!mounted) return; // Ensure widget is still in the tree
-
-        if (e.code == 'weak-password') {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.orangeAccent,
-            content: Text(
-              "Password Provided is too Weak",
-              style: TextStyle(fontSize: 18.0),
-            ),
-          ));
-        } else if (e.code == "email-already-in-use") {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.orangeAccent,
-            content: Text(
-              "Account Already exists",
-              style: TextStyle(fontSize: 18.0),
-            ),
-          ));
-        }
+          context,
+          MaterialPageRoute(builder: (context) => Navigation()),
+        );
       }
     }
   }
@@ -79,88 +62,117 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Sign Up Page'),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formkey,
-            child: Center(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TextFormField(
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please Enter Name';
-                      }
-                      return null;
-                    },
-                    controller: namecontroller,
-                    decoration: InputDecoration(
-                      labelText: 'Name',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please Enter Email';
-                      }
-                      return null;
-                    },
-                    controller: mailcontroller,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please Enter Password';
-                      }
-                      return null;
-                    },
-                    controller: passwordcontroller,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
-                    ),
+                  const Text(
+                    "HIRAM",
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_formkey.currentState!.validate()) {
-                        setState(() {
-                          email = mailcontroller.text;
-                          name = namecontroller.text;
-                          password = passwordcontroller.text;
-                        });
-                        //print(email);
-                      }
-                      registration();
-                    },
-                    child: const Text('Sign Up'),
+                  _buildTextField(emailController, "Email"),
+                  const SizedBox(height: 10),
+                  _buildTextField(firstNameController, "First Name"),
+                  const SizedBox(height: 10),
+                  _buildTextField(lastNameController, "Last Name"),
+                  const SizedBox(height: 10),
+                  _buildPasswordField(
+                      passwordController, "Password", _obscurePassword, () {
+                    setState(() => _obscurePassword = !_obscurePassword);
+                  }),
+                  const SizedBox(height: 10),
+                  _buildPasswordField(reenterPasswordController,
+                      "Re-enter Password", _obscureReenterPassword, () {
+                    setState(() =>
+                        _obscureReenterPassword = !_obscureReenterPassword);
+                  }),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _registerUser,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: const Text('Register',
+                          style: TextStyle(color: Colors.white)),
+                    ),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const LoginPage()),
-                      );
-                    },
-                    child: const Text('Login'),
+                  const SizedBox(height: 50),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const LoginPage()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      child: const Text('Sign In',
+                          style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    "Already have an account?",
+                    style: TextStyle(color: Colors.grey),
                   ),
                 ],
               ),
             ),
           ),
-        ));
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      validator: (value) =>
+          (value == null || value.isEmpty) ? 'Please enter your $label' : null,
+    );
+  }
+
+  Widget _buildPasswordField(TextEditingController controller, String label,
+      bool obscureText, VoidCallback toggleVisibility) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        suffixIcon: IconButton(
+          icon: Icon(obscureText ? Icons.visibility_off : Icons.visibility),
+          onPressed: toggleVisibility,
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) return 'Please enter your $label';
+        if (label == "Password" && value.length < 6)
+          return 'Password must be at least 6 characters long';
+        return null;
+      },
+    );
   }
 }
