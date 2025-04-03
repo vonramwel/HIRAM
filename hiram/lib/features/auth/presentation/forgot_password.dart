@@ -1,7 +1,7 @@
 import 'signup.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
+import '../service/auth.dart';
 
 class ForgotPassword extends StatefulWidget {
   const ForgotPassword({super.key});
@@ -12,21 +12,8 @@ class ForgotPassword extends StatefulWidget {
 
 class _ForgotPasswordState extends State<ForgotPassword> {
   String email = "";
-  TextEditingController mailcontroller = TextEditingController();
-  final _formkey = GlobalKey<FormState>();
-
-  resetPassword() async {
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Password Reset Email has been sent!")));
-    } on FirebaseAuthException catch (e) {
-      if (e.code == "user-not-found") {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("No user found for that email.")));
-      }
-    }
-  }
+  TextEditingController mailController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +22,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Form(
-            key: _formkey, // Assign the form key here
+            key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -52,7 +39,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   ),
                 ),
                 TextFormField(
-                  controller: mailcontroller,
+                  controller: mailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     hintText: "Please enter your email",
@@ -72,11 +59,9 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      if (_formkey.currentState!.validate()) {
-                        setState(() {
-                          email = mailcontroller.text;
-                        });
-                        resetPassword();
+                      if (_formKey.currentState!.validate()) {
+                        AuthMethods()
+                            .resetPassword(context, mailController.text);
                       }
                     },
                     style: ElevatedButton.styleFrom(

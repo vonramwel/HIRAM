@@ -118,4 +118,17 @@ class AuthMethods {
       return false;
     }
   }
+
+  Future<void> resetPassword(BuildContext context, String email) async {
+    try {
+      await auth.sendPasswordResetEmail(email: email);
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Password Reset Email has been sent!")));
+    } on FirebaseAuthException catch (e) {
+      if (e.code == "user-not-found") {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("No user found for that email.")));
+      }
+    }
+  }
 }
