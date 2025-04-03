@@ -28,17 +28,17 @@ class _CategoriesState extends State<Categories> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(5.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Categories',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
+          // const Text(
+          //   'Categories',
+          //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          // ),
+          const SizedBox(height: 10),
           SizedBox(
-            height: 110, // 🔹 Increased height to prevent overflow
+            height: 90, // 🔹 Increased height to prevent overflow
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: categories.length,
@@ -60,7 +60,7 @@ class _CategoriesState extends State<Categories> {
                       ),
                       const SizedBox(height: 5),
                       SizedBox(
-                        width: 90, // 🔹 Slightly wider for better readability
+                        width: 65, // 🔹 Slightly wider for better readability
                         child: Text(
                           categories[index]['name'],
                           style: const TextStyle(fontSize: 12),
@@ -75,6 +75,7 @@ class _CategoriesState extends State<Categories> {
               },
             ),
           ),
+          const SizedBox(height: 10),
         ],
       ),
     );
