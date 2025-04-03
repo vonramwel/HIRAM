@@ -100,7 +100,7 @@ class _ListingsSectionState extends State<ListingsSection> {
   Widget _listingCard(BuildContext context, Listing listing) {
     String imageUrl = (listing.images.isNotEmpty)
         ? listing.images.first
-        : 'https://via.placeholder.com/150';
+        : ''; // Updated placeholder image URL
 
     return GestureDetector(
       onTap: () {
@@ -128,8 +128,8 @@ class _ListingsSectionState extends State<ListingsSection> {
                     imageUrl,
                     fit: BoxFit.cover,
                     width: double.infinity,
-                    errorBuilder: (context, error, stackTrace) => Image.network(
-                      'https://via.placeholder.com/150',
+                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                      'assets/images/placeholder.png', // Updated placeholder image URL,
                       fit: BoxFit.cover,
                       width: double.infinity,
                     ),
