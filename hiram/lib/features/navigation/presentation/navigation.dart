@@ -82,7 +82,7 @@ class _NavigationState extends State<Navigation> {
             ));
 
       case 1:
-        return const Categories();
+        return const UserProfile();
       case 2:
         return SingleChildScrollView(
             child:

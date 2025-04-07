@@ -29,7 +29,7 @@ class _ListingsSectionState extends State<ListingsSection> {
               widget.title,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            Categories(),
+            Categories(type: widget.title),
             SizedBox(
               height: 200,
               child: FutureBuilder<String>(
