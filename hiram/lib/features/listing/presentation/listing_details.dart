@@ -74,9 +74,10 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                              Image.network(
-                            'https://via.placeholder.com/150',
+                              Image.asset(
+                            'assets/images/placeholder.png', // Updated placeholder image URL,
                             fit: BoxFit.cover,
+                            width: double.infinity,
                           ),
                         ),
                       );

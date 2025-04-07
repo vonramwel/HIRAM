@@ -56,28 +56,33 @@ class _NavigationState extends State<Navigation> {
   Widget _buildPage(int index) {
     switch (index) {
       case 0: // Home Page
-        return SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              UserProfile(),
-              Categories(),
-              ListingsSection(title: 'Products'),
-              ListingsSection(title: 'Services'),
-              FloatingActionButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AddListingPage()),
-                  );
-                },
-                child: const Icon(Icons.add),
+        return Scaffold(
+            floatingActionButton: FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddListingPage()),
+                );
+              },
+              child: const Icon(Icons.add),
+            ),
+            body: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  UserProfile(),
+                  SizedBox(height: 10),
+                  ListingsSection(title: 'Products'),
+                  // Categories(),
+                  SizedBox(height: 20),
+                  //Categories(),
+                  ListingsSection(title: 'Services'),
+                ],
               ),
-            ],
-          ),
-        );
+            ));
+
       case 1:
-        return const Categories();
+        return const UserProfile();
       case 2:
         return SingleChildScrollView(
             child:

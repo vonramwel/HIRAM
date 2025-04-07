@@ -15,8 +15,8 @@ class RentRequestScreen extends StatefulWidget {
 
 class _RentRequestScreenState extends State<RentRequestScreen> {
   final _formKey = GlobalKey<FormState>();
-  DateTime? _startDate;
-  DateTime? _endDate;
+  DateTime? _startDateTime;
+  DateTime? _endDateTime;
   String? _paymentMethod;
   final TextEditingController _notesController = TextEditingController();
   bool _isSubmitting = false;
@@ -25,31 +25,126 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
   final List<String> _paymentMethods = ['GCash', 'Bank Transfer', 'Cash'];
   String? _transactionId;
 
-  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
-    DateTime initialDate =
-        isStartDate ? _startDate ?? DateTime.now() : _endDate ?? DateTime.now();
-    DateTime? pickedDate = await showDatePicker(
+  double _totalPrice = 0.0; // Store the total price
+
+  Future<void> _selectDateTime(BuildContext context, bool isStartDate) async {
+    DateTime initialDateTime = isStartDate
+        ? _startDateTime ?? DateTime.now()
+        : _endDateTime ?? (_startDateTime ?? DateTime.now());
+
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: initialDate,
+      initialDate: initialDateTime,
       firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
 
     if (pickedDate != null) {
-      setState(() {
-        if (isStartDate) {
-          _startDate = pickedDate;
-        } else {
-          _endDate = pickedDate;
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(initialDateTime),
+        builder: (context, child) {
+          // Limit the picker to the hour only (ignore minutes)
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child!,
+          );
+        },
+      );
+
+      if (pickedTime != null) {
+        // Round the time up to the next hour if it's not on the hour
+        int hour = pickedTime.hour;
+        if (pickedTime.minute > 0) {
+          hour += 1;
         }
-      });
+
+        final DateTime fullDateTime = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          hour, // Rounded hour
+          0, // Set minute to 0
+        );
+
+        setState(() {
+          if (isStartDate) {
+            // Check if the selected start time is in the past
+            if (fullDateTime.isBefore(DateTime.now())) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Start date and time cannot be in the past.'),
+                ),
+              );
+            } else {
+              _startDateTime = fullDateTime;
+
+              if (_endDateTime != null &&
+                  _startDateTime!.isAfter(_endDateTime!)) {
+                _endDateTime = null;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'End date and time has been cleared. Please select a new end datetime.'),
+                  ),
+                );
+              }
+            }
+          } else {
+            if (_startDateTime != null &&
+                fullDateTime.isBefore(_startDateTime!)) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Invalid End DateTime'),
+                  content: const Text(
+                      'End date and time cannot be before start date and time.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              _endDateTime = fullDateTime;
+            }
+          }
+
+          // Recompute the total price whenever start or end time changes
+          _computeTotalPrice();
+        });
+      }
+    }
+  }
+
+  String _formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return 'Select Date & Time';
+    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  // Method to compute the total price based on the selected start and end date
+  void _computeTotalPrice() {
+    if (_startDateTime != null && _endDateTime != null) {
+      final duration = _endDateTime!.difference(_startDateTime!);
+
+      if (widget.listing.priceUnit == 'Per Hour') {
+        _totalPrice = widget.listing.price * duration.inHours;
+      } else if (widget.listing.priceUnit == 'Per Day') {
+        _totalPrice =
+            widget.listing.price * (duration.inDays == 0 ? 1 : duration.inDays);
+      }
+
+      setState(() {});
     }
   }
 
   Future<void> _submitRequest() async {
     if (!_formKey.currentState!.validate() ||
-        _startDate == null ||
-        _endDate == null ||
+        _startDateTime == null ||
+        _endDateTime == null ||
         _paymentMethod == null) {
       return;
     }
@@ -66,7 +161,6 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
       return;
     }
 
-    // Fetch the transactionId after adding the transaction
     String? transactionId =
         await _transactionService.getTransactionId(widget.listing.id, userId);
 
@@ -75,12 +169,14 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
       listingId: widget.listing.id,
       renterId: userId,
       ownerId: widget.listing.userId,
-      startDate: _startDate!,
-      endDate: _endDate!,
+      startDate: _startDateTime!,
+      endDate: _endDateTime!,
       paymentMethod: _paymentMethod!,
       notes: _notesController.text,
       status: 'Pending',
       timestamp: Timestamp.now(),
+      totalPrice:
+          _totalPrice, // Add the computed total price to the transaction
     );
 
     await _transactionService.addTransaction(transaction);
@@ -89,7 +185,7 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
       _isSubmitting = false;
     });
 
-    print("Transaction ID: $_transactionId"); // Debugging
+    print("Transaction ID: $_transactionId");
     Navigator.pop(context);
   }
 
@@ -104,16 +200,15 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
           child: Column(
             children: [
               ListTile(
-                title: Text(
-                    'Start Date: ${_startDate?.toString().split(' ')[0] ?? 'Select Date'}'),
+                title:
+                    Text('Start DateTime: ${_formatDateTime(_startDateTime)}'),
                 trailing: const Icon(Icons.calendar_today),
-                onTap: () => _selectDate(context, true),
+                onTap: () => _selectDateTime(context, true),
               ),
               ListTile(
-                title: Text(
-                    'End Date: ${_endDate?.toString().split(' ')[0] ?? 'Select Date'}'),
+                title: Text('End DateTime: ${_formatDateTime(_endDateTime)}'),
                 trailing: const Icon(Icons.calendar_today),
-                onTap: () => _selectDate(context, false),
+                onTap: () => _selectDateTime(context, false),
               ),
               DropdownButtonFormField<String>(
                 value: _paymentMethod,
@@ -135,8 +230,9 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
               ),
               const SizedBox(height: 20),
               if (_transactionId != null)
-                Text(
-                    "Transaction ID: $_transactionId"), // Display transactionId
+                Text("Transaction ID: $_transactionId"),
+              // Display the total price
+              Text('Total Price: \Php$_totalPrice'),
               ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitRequest,
                 child: _isSubmitting

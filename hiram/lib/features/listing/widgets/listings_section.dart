@@ -3,6 +3,7 @@ import '../model/listing_model.dart';
 import '../service/listing_service.dart';
 import '../../auth/service/auth.dart'; // Import AuthMethods for user authentication
 import '../presentation/listing_details.dart';
+import '../../listing/widgets/categories.dart';
 
 class ListingsSection extends StatefulWidget {
   final String title;
@@ -20,7 +21,7 @@ class _ListingsSectionState extends State<ListingsSection> {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(5.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -28,9 +29,9 @@ class _ListingsSectionState extends State<ListingsSection> {
               widget.title,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
+            Categories(type: widget.title),
             SizedBox(
-              height: 250,
+              height: 200,
               child: FutureBuilder<String>(
                 future: AuthMethods().getCurrentUserId(),
                 builder: (context, userSnapshot) {
@@ -100,7 +101,7 @@ class _ListingsSectionState extends State<ListingsSection> {
   Widget _listingCard(BuildContext context, Listing listing) {
     String imageUrl = (listing.images.isNotEmpty)
         ? listing.images.first
-        : 'https://via.placeholder.com/150';
+        : ''; // Updated placeholder image URL
 
     return GestureDetector(
       onTap: () {
@@ -112,7 +113,7 @@ class _ListingsSectionState extends State<ListingsSection> {
         );
       },
       child: SizedBox(
-        width: 200,
+        width: 250,
         child: Card(
           elevation: 4,
           shape:
@@ -128,8 +129,8 @@ class _ListingsSectionState extends State<ListingsSection> {
                     imageUrl,
                     fit: BoxFit.cover,
                     width: double.infinity,
-                    errorBuilder: (context, error, stackTrace) => Image.network(
-                      'https://via.placeholder.com/150',
+                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                      'assets/images/placeholder.png', // Updated placeholder image URL,
                       fit: BoxFit.cover,
                       width: double.infinity,
                     ),

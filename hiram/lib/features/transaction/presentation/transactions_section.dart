@@ -99,30 +99,43 @@ class _TransactionsSectionState extends State<TransactionsSection> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 10),
-            ToggleButtons(
-              isSelected: [
-                _selectedStatus == 'Pending',
-                _selectedStatus == 'In Progress',
-                _selectedStatus == 'Completed',
-                _selectedStatus == 'Cancelled'
-              ],
-              onPressed: (index) {
-                setState(() {
-                  _selectedStatus = [
-                    'Pending',
-                    'In Progress',
-                    'Completed',
-                    'Cancelled'
-                  ][index];
-                });
-              },
-              children: const [
-                Padding(padding: EdgeInsets.all(8.0), child: Text('Pending')),
-                Padding(
-                    padding: EdgeInsets.all(8.0), child: Text('In Progress')),
-                Padding(padding: EdgeInsets.all(8.0), child: Text('Completed')),
-                Padding(padding: EdgeInsets.all(8.0), child: Text('Cancelled')),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ToggleButtons(
+                isSelected: [
+                  _selectedStatus == 'Pending',
+                  _selectedStatus == 'In Progress',
+                  _selectedStatus == 'Completed',
+                  _selectedStatus == 'Cancelled',
+                  _selectedStatus == 'Overdue',
+                  _selectedStatus == 'Expired Request',
+                ],
+                onPressed: (index) {
+                  setState(() {
+                    _selectedStatus = [
+                      'Pending',
+                      'In Progress',
+                      'Completed',
+                      'Cancelled',
+                      'Overdue',
+                      'Expired Request',
+                    ][index];
+                  });
+                },
+                children: const [
+                  Padding(padding: EdgeInsets.all(8.0), child: Text('Pending')),
+                  Padding(
+                      padding: EdgeInsets.all(8.0), child: Text('In Progress')),
+                  Padding(
+                      padding: EdgeInsets.all(8.0), child: Text('Completed')),
+                  Padding(
+                      padding: EdgeInsets.all(8.0), child: Text('Cancelled')),
+                  Padding(padding: EdgeInsets.all(8.0), child: Text('Overdue')),
+                  Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text('Expired Request')),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
             SizedBox(
@@ -158,10 +171,25 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                             child: Text('No transactions available.'));
                       }
 
-                      List<TransactionModel> transactions = snapshot.data!.docs
-                          .map((doc) => TransactionModel.fromMap(
-                              doc.data() as Map<String, dynamic>))
-                          .toList();
+                      DateTime now = DateTime.now();
+
+                      List<TransactionModel> transactions =
+                          snapshot.data!.docs.map((doc) {
+                        final map = doc.data() as Map<String, dynamic>;
+                        final transaction = TransactionModel.fromMap(map);
+
+                        // Auto-update status to Expired Request if needed
+                        if (transaction.status == 'Pending' &&
+                            transaction.startDate.isBefore(now)) {
+                          FirebaseFirestore.instance
+                              .collection('transactions')
+                              .doc(doc.id)
+                              .update({'status': 'Expired Request'});
+                          transaction.status = 'Expired Request';
+                        }
+
+                        return transaction;
+                      }).toList();
 
                       final filteredTransactions = transactions.where((t) {
                         bool isUserTransaction =
@@ -171,16 +199,25 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                                     t.renterId == _userId));
                         if (!isUserTransaction) return false;
 
+                        bool isOverdue =
+                            t.status == 'Lent' && t.endDate.isBefore(now);
+
                         switch (_selectedStatus) {
                           case 'Pending':
-                            return t.status == 'Pending';
+                            return t.status == 'Pending' &&
+                                t.startDate.isAfter(now);
                           case 'In Progress':
-                            return t.status == 'Approved' || t.status == 'Lent';
+                            return (t.status == 'Approved' ||
+                                (t.status == 'Lent' && t.endDate.isAfter(now)));
                           case 'Completed':
                             return t.status == 'Completed';
                           case 'Cancelled':
                             return t.status == 'Cancelled' ||
                                 t.status == 'Disapproved';
+                          case 'Overdue':
+                            return isOverdue;
+                          case 'Expired Request':
+                            return t.status == 'Expired Request';
                           default:
                             return false;
                         }

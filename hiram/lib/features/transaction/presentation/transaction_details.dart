@@ -51,6 +51,22 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     setState(() {
       _generatedCode = code;
     });
+    Navigator.pop(context);
+
+    // Show dialog with generated code
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Code Generated"),
+        content: Text("Transaction code: $code"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showInputDialog() {
@@ -73,14 +89,18 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           ElevatedButton(
             onPressed: () async {
               bool isValid = await _transactionService.validateTransactionCode(
-                  widget.transaction.transactionId,
-                  codeController.text,
-                  widget.transaction.status);
+                widget.transaction.transactionId,
+                codeController.text,
+                widget.transaction.status,
+              );
+
               if (isValid && widget.transaction.status == "Approved") {
                 setState(() {
                   widget.transaction.status = "Lent";
                 });
                 Navigator.pop(context);
+                _showTransactionCompletedDialog(
+                    "Transaction has been marked as Lent.");
               }
 
               if (isValid && widget.transaction.status == "Lent") {
@@ -88,9 +108,34 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                   widget.transaction.status = "Completed";
                 });
                 Navigator.pop(context);
+                _showTransactionCompletedDialog(
+                    "Transaction has been marked as Completed.");
+              }
+
+              if (!isValid) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text("Invalid code. Please try again.")),
+                );
               }
             },
             child: const Text("Submit"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTransactionCompletedDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Success"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("OK"),
           ),
         ],
       ),
@@ -142,6 +187,10 @@ class _TransactionDetailsState extends State<TransactionDetails> {
               ),
               if (_generatedCode != null)
                 Text("Generated Code: $_generatedCode"),
+              ElevatedButton(
+                onPressed: () => _updateTransactionStatus("Cancelled"),
+                child: const Text("Cancel Transaction"),
+              ),
             ],
             if (isRenter && isApproved && isStartDateToday) ...[
               ElevatedButton(
