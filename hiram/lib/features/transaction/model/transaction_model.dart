@@ -13,6 +13,7 @@ class TransactionModel {
   final Timestamp timestamp;
   String transactionCode;
   double? transactionRating;
+  double totalPrice;
 
   TransactionModel({
     required this.transactionId,
@@ -25,6 +26,7 @@ class TransactionModel {
     required this.notes,
     required this.status,
     required this.timestamp,
+    required this.totalPrice,
     this.transactionCode = '',
     this.transactionRating,
   });
@@ -43,6 +45,7 @@ class TransactionModel {
       'timestamp': timestamp,
       'transactionCode': transactionCode,
       'transactionRating': transactionRating,
+      'totalPrice': totalPrice,
     };
   }
 
@@ -60,6 +63,7 @@ class TransactionModel {
       timestamp: map['timestamp'] as Timestamp,
       transactionCode: map['transactionCode'] ?? '',
       transactionRating: (map['transactionRating'] as num?)?.toDouble(),
+      totalPrice: (map['totalPrice'] as num).toDouble(),
     );
   }
 }

@@ -55,7 +55,7 @@ class _CategoriesState extends State<Categories> {
                   ),
                 ),
               );
-              print(filteredCategories[index]['name']);
+              //print(filteredCategories[index]['name']);
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),

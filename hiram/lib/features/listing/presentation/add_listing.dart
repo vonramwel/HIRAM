@@ -25,6 +25,7 @@ class _AddListingPageState extends State<AddListingPage> {
   String _type = 'Products for Rent';
   String? _category;
   double _price = 0.0;
+  String _priceUnit = 'Per Hour'; // Default to per hour
 
   final Map<String, List<String>> _categories = {
     'Products for Rent': [
@@ -56,9 +57,19 @@ class _AddListingPageState extends State<AddListingPage> {
     }
 
     final pickedFiles = await _picker.pickMultiImage();
-    if (pickedFiles.isNotEmpty) {
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
       for (var pickedFile in pickedFiles) {
         final file = File(pickedFile.path);
+
+        // Check if the file exists
+        if (!file.existsSync()) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Selected file does not exist.')),
+          );
+          continue;
+        }
+
+        // Check file size
         if (await file.length() > 5 * 1024 * 1024) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Each image must be under 5MB.')),
@@ -97,6 +108,7 @@ class _AddListingPageState extends State<AddListingPage> {
         category: _category!,
         type: _type,
         price: _price,
+        priceUnit: _priceUnit, // Added priceUnit
         rating: null,
         userId: userId,
         timestamp: DateTime.now(),
@@ -168,6 +180,16 @@ class _AddListingPageState extends State<AddListingPage> {
                         : null;
                   },
                   onSaved: (value) => _price = double.parse(value!),
+                ),
+                // Dropdown for price unit (Per Hour or Per Day)
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Price Unit'),
+                  value: _priceUnit,
+                  items: ['Per Hour', 'Per Day']
+                      .map((unit) =>
+                          DropdownMenuItem(value: unit, child: Text(unit)))
+                      .toList(),
+                  onChanged: (value) => setState(() => _priceUnit = value!),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
