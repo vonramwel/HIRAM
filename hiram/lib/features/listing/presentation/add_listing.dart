@@ -5,6 +5,7 @@ import '../model/listing_model.dart';
 import '../service/listing_service.dart';
 import '../../auth/service/auth.dart';
 import 'dart:io';
+import '../../../data/philippine_locations.dart';
 
 class AddListingPage extends StatefulWidget {
   const AddListingPage({super.key});
@@ -25,7 +26,16 @@ class _AddListingPageState extends State<AddListingPage> {
   String _type = 'Products for Rent';
   String? _category;
   double _price = 0.0;
-  String _priceUnit = 'Per Hour'; // Default
+  String _priceUnit = 'Per Hour';
+
+  // Transaction
+  String? _preferredTransaction = 'Pick Up';
+  String? _otherTransaction;
+
+  // Location
+  String? _selectedRegion;
+  String? _selectedMunicipality;
+  String? _selectedBarangay;
 
   final Map<String, List<String>> _categories = {
     'Products for Rent': [
@@ -93,6 +103,11 @@ class _AddListingPageState extends State<AddListingPage> {
       String userId = await _authMethods.getCurrentUserId();
       List<String> imageUrls = await _uploadImages();
 
+      // Set the transaction value
+      final preferredTransactionValue = _preferredTransaction == 'Others'
+          ? _otherTransaction
+          : _preferredTransaction;
+
       final newListing = Listing(
         id: '',
         title: _title,
@@ -105,6 +120,10 @@ class _AddListingPageState extends State<AddListingPage> {
         userId: userId,
         timestamp: DateTime.now(),
         images: imageUrls,
+        preferredTransaction: preferredTransactionValue,
+        region: _selectedRegion,
+        municipality: _selectedMunicipality,
+        barangay: _selectedBarangay,
       );
 
       await _listingService.addListing(newListing);
@@ -232,6 +251,90 @@ class _AddListingPageState extends State<AddListingPage> {
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 12),
+
+                // Preferred Means of Transaction
+                DropdownButtonFormField<String>(
+                  decoration:
+                      _fieldDecoration('Preferred Means of Transaction'),
+                  value: _preferredTransaction,
+                  items: ['Pick Up', 'Delivery', 'Meet Up', 'Others']
+                      .map((option) =>
+                          DropdownMenuItem(value: option, child: Text(option)))
+                      .toList(),
+                  onChanged: (value) =>
+                      setState(() => _preferredTransaction = value),
+                ),
+                const SizedBox(height: 12),
+                if (_preferredTransaction == 'Others')
+                  TextFormField(
+                    decoration:
+                        _fieldDecoration('Specify Other Means of Transaction'),
+                    validator: (value) {
+                      if (_preferredTransaction == 'Others' &&
+                          (value == null || value.isEmpty)) {
+                        return 'Please specify your transaction method';
+                      }
+                      return null;
+                    },
+                    onSaved: (value) => _otherTransaction = value,
+                  ),
+
+                const SizedBox(height: 12),
+
+                // Location Fields
+                DropdownButtonFormField<String>(
+                  decoration: _fieldDecoration('Region'),
+                  value: _selectedRegion,
+                  items: philippineLocations.keys
+                      .map((region) =>
+                          DropdownMenuItem(value: region, child: Text(region)))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedRegion = value;
+                      _selectedMunicipality = null;
+                      _selectedBarangay = null;
+                    });
+                  },
+                  validator: (value) =>
+                      value == null ? 'Select a region' : null,
+                ),
+                const SizedBox(height: 12),
+                if (_selectedRegion != null)
+                  DropdownButtonFormField<String>(
+                    decoration: _fieldDecoration('Municipality'),
+                    value: _selectedMunicipality,
+                    items: philippineLocations[_selectedRegion]!
+                        .keys
+                        .map((municipality) => DropdownMenuItem(
+                            value: municipality, child: Text(municipality)))
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedMunicipality = value;
+                        _selectedBarangay = null;
+                      });
+                    },
+                    validator: (value) =>
+                        value == null ? 'Select a municipality' : null,
+                  ),
+                const SizedBox(height: 12),
+                if (_selectedMunicipality != null)
+                  DropdownButtonFormField<String>(
+                    decoration: _fieldDecoration('Barangay'),
+                    value: _selectedBarangay,
+                    items: philippineLocations[_selectedRegion]![
+                            _selectedMunicipality]!
+                        .map((barangay) => DropdownMenuItem(
+                            value: barangay, child: Text(barangay)))
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => _selectedBarangay = value),
+                    validator: (value) =>
+                        value == null ? 'Select a barangay' : null,
+                  ),
                 const SizedBox(height: 16),
                 Center(
                   child: ElevatedButton(
@@ -239,8 +342,6 @@ class _AddListingPageState extends State<AddListingPage> {
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
                       backgroundColor: Colors.grey[200],
                       foregroundColor: Colors.black,
                     ),
@@ -256,6 +357,7 @@ class _AddListingPageState extends State<AddListingPage> {
                             width: 100, height: 100, fit: BoxFit.cover))
                         .toList(),
                   ),
+
                 const SizedBox(height: 20),
                 Center(
                   child: ElevatedButton(

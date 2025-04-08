@@ -3,13 +3,20 @@ class Listing {
   String title;
   String description;
   String category;
-  String type; // "product" or "service"
+  String type; // "Products for Rent" or "Services for Hire"
   double? rating; // Initially null
   double price;
   String priceUnit;
   String userId; // User who posted the listing
   DateTime timestamp; // Time when the listing was created
   List<String> images; // List of image URLs
+
+  // New fields
+  String? preferredTransaction;
+
+  String? region;
+  String? municipality;
+  String? barangay;
 
   Listing({
     required this.id,
@@ -19,13 +26,16 @@ class Listing {
     required this.type,
     this.rating,
     required this.price,
-    required this.priceUnit, // Added priceUnit
+    required this.priceUnit,
     required this.userId,
     required this.timestamp,
-    required this.images, // Initialize images
+    required this.images,
+    this.preferredTransaction,
+    this.region,
+    this.municipality,
+    this.barangay,
   });
 
-  // Convert Listing to JSON
   Map<String, dynamic> toJson() => {
         "id": id,
         "title": title,
@@ -34,13 +44,16 @@ class Listing {
         "type": type,
         "rating": rating,
         "price": price,
-        "priceUnit": priceUnit, // Store priceUnit
+        "priceUnit": priceUnit,
         "userId": userId,
         "timestamp": timestamp.toIso8601String(),
-        "images": images, // Store image URLs
+        "images": images,
+        "preferredTransaction": preferredTransaction,
+        "region": region,
+        "municipality": municipality,
+        "barangay": barangay,
       };
 
-  // Create Listing from JSON
   static Listing fromJson(Map<String, dynamic> json) => Listing(
         id: json["id"],
         title: json["title"],
@@ -49,9 +62,13 @@ class Listing {
         type: json["type"],
         rating: json["rating"]?.toDouble(),
         price: json["price"].toDouble(),
-        priceUnit: json["priceUnit"], // Retrieve priceUnit
+        priceUnit: json["priceUnit"],
         userId: json["userId"],
         timestamp: DateTime.parse(json["timestamp"]),
-        images: List<String>.from(json["images"] ?? []), // Retrieve images
+        images: List<String>.from(json["images"] ?? []),
+        preferredTransaction: json["preferredTransaction"],
+        region: json["region"],
+        municipality: json["municipality"],
+        barangay: json["barangay"],
       );
 }

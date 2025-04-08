@@ -4,6 +4,7 @@ import '../service/listing_service.dart';
 import '../../auth/service/auth.dart'; // Import AuthMethods for user authentication
 import '../presentation/listing_details.dart';
 import '../../listing/widgets/categories.dart';
+import '../widgets/listing_card.dart'; // New import
 
 class ListingsSection extends StatefulWidget {
   final String title;
@@ -83,7 +84,8 @@ class _ListingsSectionState extends State<ListingsSection> {
                           final listing = listings[index];
                           return Padding(
                             padding: const EdgeInsets.only(right: 10.0),
-                            child: _listingCard(context, listing),
+                            child: ListingCard(
+                                listing: listing), // Use the extracted widget
                           );
                         },
                       );
@@ -93,69 +95,6 @@ class _ListingsSectionState extends State<ListingsSection> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _listingCard(BuildContext context, Listing listing) {
-    String imageUrl = (listing.images.isNotEmpty)
-        ? listing.images.first
-        : ''; // Updated placeholder image URL
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ListingDetailsPage(listing: listing),
-          ),
-        );
-      },
-      child: SizedBox(
-        width: 250,
-        child: Card(
-          elevation: 4,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(10)),
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                      'assets/images/placeholder.png', // Updated placeholder image URL,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      listing.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
