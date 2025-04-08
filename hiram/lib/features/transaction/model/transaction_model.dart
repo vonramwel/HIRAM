@@ -15,6 +15,9 @@ class TransactionModel {
   double? transactionRating;
   double totalPrice;
 
+  bool hasReviewedByRenter;
+  bool hasReviewedByLender;
+
   TransactionModel({
     required this.transactionId,
     required this.listingId,
@@ -29,6 +32,8 @@ class TransactionModel {
     required this.totalPrice,
     this.transactionCode = '',
     this.transactionRating,
+    this.hasReviewedByRenter = false,
+    this.hasReviewedByLender = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -46,6 +51,8 @@ class TransactionModel {
       'transactionCode': transactionCode,
       'transactionRating': transactionRating,
       'totalPrice': totalPrice,
+      'hasReviewedByRenter': hasReviewedByRenter,
+      'hasReviewedByLender': hasReviewedByLender,
     };
   }
 
@@ -64,6 +71,8 @@ class TransactionModel {
       transactionCode: map['transactionCode'] ?? '',
       transactionRating: (map['transactionRating'] as num?)?.toDouble(),
       totalPrice: (map['totalPrice'] as num).toDouble(),
+      hasReviewedByRenter: map['hasReviewedByRenter'] ?? false,
+      hasReviewedByLender: map['hasReviewedByLender'] ?? false,
     );
   }
 }

@@ -14,7 +14,7 @@ class TransactionsSection extends StatefulWidget {
 
 class _TransactionsSectionState extends State<TransactionsSection> {
   String? _userId;
-  String _selectedStatus = 'Pending'; // Default filter
+  String _selectedStatus = 'Pending';
 
   @override
   void initState() {
@@ -109,6 +109,7 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                   _selectedStatus == 'Cancelled',
                   _selectedStatus == 'Overdue',
                   _selectedStatus == 'Expired Request',
+                  _selectedStatus == 'Not Yet Reviewed',
                 ],
                 onPressed: (index) {
                   setState(() {
@@ -119,6 +120,7 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                       'Cancelled',
                       'Overdue',
                       'Expired Request',
+                      'Not Yet Reviewed',
                     ][index];
                   });
                 },
@@ -134,6 +136,9 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                   Padding(
                       padding: EdgeInsets.all(8.0),
                       child: Text('Expired Request')),
+                  Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text('Not Yet Reviewed')),
                 ],
               ),
             ),
@@ -178,7 +183,6 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                         final map = doc.data() as Map<String, dynamic>;
                         final transaction = TransactionModel.fromMap(map);
 
-                        // Auto-update status to Expired Request if needed
                         if (transaction.status == 'Pending' &&
                             transaction.startDate.isBefore(now)) {
                           FirebaseFirestore.instance
@@ -218,6 +222,11 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                             return isOverdue;
                           case 'Expired Request':
                             return t.status == 'Expired Request';
+                          case 'Not Yet Reviewed':
+                            return t.status == 'Completed' &&
+                                (widget.title == 'Transactions as Renter'
+                                    ? t.hasReviewedByRenter != true
+                                    : t.hasReviewedByLender != true);
                           default:
                             return false;
                         }
