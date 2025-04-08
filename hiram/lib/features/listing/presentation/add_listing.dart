@@ -25,7 +25,7 @@ class _AddListingPageState extends State<AddListingPage> {
   String _type = 'Products for Rent';
   String? _category;
   double _price = 0.0;
-  String _priceUnit = 'Per Hour'; // Default to per hour
+  String _priceUnit = 'Per Hour'; // Default
 
   final Map<String, List<String>> _categories = {
     'Products for Rent': [
@@ -60,16 +60,8 @@ class _AddListingPageState extends State<AddListingPage> {
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       for (var pickedFile in pickedFiles) {
         final file = File(pickedFile.path);
+        if (!file.existsSync()) continue;
 
-        // Check if the file exists
-        if (!file.existsSync()) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Selected file does not exist.')),
-          );
-          continue;
-        }
-
-        // Check file size
         if (await file.length() > 5 * 1024 * 1024) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Each image must be under 5MB.')),
@@ -108,7 +100,7 @@ class _AddListingPageState extends State<AddListingPage> {
         category: _category!,
         type: _type,
         price: _price,
-        priceUnit: _priceUnit, // Added priceUnit
+        priceUnit: _priceUnit,
         rating: null,
         userId: userId,
         timestamp: DateTime.now(),
@@ -120,46 +112,84 @@ class _AddListingPageState extends State<AddListingPage> {
     }
   }
 
+  InputDecoration _fieldDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Listing')),
+      appBar: AppBar(title: const Text('Post a New Listing')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Title'),
+                  decoration: _fieldDecoration('Title'),
                   validator: (value) =>
                       value == null || value.isEmpty ? 'Enter a title' : null,
                   onSaved: (value) => _title = value!,
                 ),
+                const SizedBox(height: 12),
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Description'),
+                  decoration: _fieldDecoration('Description'),
+                  maxLines: 3,
                   validator: (value) => value == null || value.isEmpty
                       ? 'Enter a description'
                       : null,
                   onSaved: (value) => _description = value!,
                 ),
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: 'Type'),
-                  value: _type,
-                  items: _categories.keys
-                      .map((type) =>
-                          DropdownMenuItem(value: type, child: Text(type)))
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _type = value!;
-                      _category = null;
-                    });
-                  },
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () =>
+                            setState(() => _type = 'Products for Rent'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _type == 'Products for Rent'
+                              ? Colors.black
+                              : Colors.grey[300],
+                          foregroundColor: _type == 'Products for Rent'
+                              ? Colors.white
+                              : Colors.black,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Product'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () =>
+                            setState(() => _type = 'Services for Hire'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _type == 'Services for Hire'
+                              ? Colors.black
+                              : Colors.grey[300],
+                          foregroundColor: _type == 'Services for Hire'
+                              ? Colors.white
+                              : Colors.black,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Service'),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: 'Category'),
+                  decoration: _fieldDecoration('Category'),
                   value: _category,
                   items: _categories[_type]!
                       .map((category) => DropdownMenuItem(
@@ -169,44 +199,78 @@ class _AddListingPageState extends State<AddListingPage> {
                   validator: (value) =>
                       value == null ? 'Select a category' : null,
                 ),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'Price'),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Enter a price';
-                    final price = double.tryParse(value);
-                    return (price == null || price < 0)
-                        ? 'Enter a valid price'
-                        : null;
-                  },
-                  onSaved: (value) => _price = double.parse(value!),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        decoration: _fieldDecoration('Price'),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty)
+                            return 'Enter a price';
+                          final price = double.tryParse(value);
+                          return (price == null || price < 0)
+                              ? 'Enter a valid price'
+                              : null;
+                        },
+                        onSaved: (value) => _price = double.parse(value!),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        decoration: _fieldDecoration('Price Unit'),
+                        value: _priceUnit,
+                        items: ['Per Hour', 'Per Day']
+                            .map((unit) => DropdownMenuItem(
+                                value: unit, child: Text(unit)))
+                            .toList(),
+                        onChanged: (value) =>
+                            setState(() => _priceUnit = value!),
+                      ),
+                    ),
+                  ],
                 ),
-                // Dropdown for price unit (Per Hour or Per Day)
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: 'Price Unit'),
-                  value: _priceUnit,
-                  items: ['Per Hour', 'Per Day']
-                      .map((unit) =>
-                          DropdownMenuItem(value: unit, child: Text(unit)))
-                      .toList(),
-                  onChanged: (value) => setState(() => _priceUnit = value!),
+                const SizedBox(height: 16),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: _pickImages,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      backgroundColor: Colors.grey[200],
+                      foregroundColor: Colors.black,
+                    ),
+                    child: const Text('Add Images (up to 5)'),
+                  ),
                 ),
+                const SizedBox(height: 12),
+                if (_images.isNotEmpty)
+                  Wrap(
+                    spacing: 8,
+                    children: _images
+                        .map((image) => Image.file(image,
+                            width: 100, height: 100, fit: BoxFit.cover))
+                        .toList(),
+                  ),
                 const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _pickImages,
-                  child: const Text('Add Images (Up to 5)'),
-                ),
-                Wrap(
-                  spacing: 8,
-                  children: _images
-                      .map(
-                          (image) => Image.file(image, width: 100, height: 100))
-                      .toList(),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _submitForm,
-                  child: const Text('Add Listing'),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: _submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 40, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('SUBMIT'),
+                  ),
                 ),
               ],
             ),
