@@ -50,17 +50,31 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Listing Details')),
+      appBar: AppBar(
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black87,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text("Contact Seller"),
+            ),
+          )
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Image Carousel or Placeholder
             widget.listing.images.isNotEmpty
                 ? CarouselSlider(
                     options: CarouselOptions(
-                      height: 250,
+                      height: 180,
                       enlargeCenterPage: true,
                       enableInfiniteScroll: true,
                       autoPlay: true,
@@ -83,17 +97,47 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     }).toList(),
                   )
                 : Container(
-                    height: 250, // Match Carousel height
+                    height: 180,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: Colors.grey[300],
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child:
-                        const Icon(Icons.image, size: 100, color: Colors.grey),
+                        const Icon(Icons.image, size: 80, color: Colors.grey),
                   ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
+
+            // Rating and View Reviews
+            Column(
+              children: const [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.star_border),
+                    Icon(Icons.star_border),
+                    Icon(Icons.star_border),
+                    Icon(Icons.star_border),
+                    Icon(Icons.star_border),
+                  ],
+                ),
+                Text("Rating: 4.95"),
+                SizedBox(height: 5),
+                ElevatedButton(
+                  onPressed: null,
+                  style: ButtonStyle(
+                    backgroundColor:
+                        MaterialStatePropertyAll<Color>(Colors.black87),
+                    foregroundColor:
+                        MaterialStatePropertyAll<Color>(Colors.white),
+                  ),
+                  child: Text("View Reviews"),
+                )
+              ],
+            ),
+
+            const SizedBox(height: 10),
 
             // Posted By
             Text(
@@ -104,52 +148,52 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
             const SizedBox(height: 10),
 
             // Title
-            _buildTextField('Title', widget.listing.title),
-
-            const SizedBox(height: 10),
-
-            // Description
-            _buildTextField('Description', widget.listing.description),
-
-            const SizedBox(height: 10),
-
-            // Type
-            _buildTextField('Type', widget.listing.type),
-
-            const SizedBox(height: 10),
-
-            // Category
-            _buildTextField('Category', widget.listing.category),
-
-            const SizedBox(height: 10),
-
-            // Price and Price Unit
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                      'Price', '₱${widget.listing.price.toStringAsFixed(2)}'),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _buildTextField('Price Unit', '')), // Price Unit
-              ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                widget.listing.title,
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
             ),
 
+            const SizedBox(height: 5),
+
+            // Description
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                widget.listing.description,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Form Fields Layout
+            _buildTwoFields('Type', widget.listing.type, 'Category',
+                widget.listing.category),
+
             const SizedBox(height: 10),
 
-            // Preferred Means of Transaction
-            _buildTextField('Preferred Means of Transaction', ''),
+            _buildTwoFields(
+                'Price',
+                '₱${widget.listing.price.toStringAsFixed(2)}',
+                'Price Unit',
+                widget.listing.priceUnit),
 
             const SizedBox(height: 10),
 
-            // Location
+            _buildTextField('Preferred Means of Transaction',
+                widget.listing.preferredTransaction ?? 'Not specified'),
+
+            const SizedBox(height: 10),
+
             _buildTextField('Location',
                 '${widget.listing.barangay ?? ''}, ${widget.listing.municipality ?? ''}'),
 
             const SizedBox(height: 20),
 
-            // Rent Button
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -162,6 +206,8 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
               },
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
+                backgroundColor: Colors.black87,
+                foregroundColor: Colors.white,
               ),
               child: const Text("Rent"),
             ),
@@ -172,22 +218,38 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
   }
 
   Widget _buildTextField(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 5),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(5),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          child: Text(value),
-        ),
+          const SizedBox(height: 5),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTwoFields(
+      String label1, String value1, String label2, String value2) {
+    return Row(
+      children: [
+        Expanded(child: _buildTextField(label1, value1)),
+        const SizedBox(width: 10),
+        Expanded(child: _buildTextField(label2, value2)),
       ],
     );
   }

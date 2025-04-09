@@ -62,7 +62,7 @@ class _ListingCardState extends State<ListingCard> {
         width: 250,
         height: 500,
         child: Card(
-          color: Colors.yellow,
+          color: const Color.fromARGB(215, 198, 196, 196),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 2,
