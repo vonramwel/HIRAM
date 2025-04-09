@@ -74,7 +74,7 @@ class _NavigationState extends State<Navigation> {
                   SizedBox(height: 10),
                   ListingsSection(title: 'Products'),
                   // Categories(),
-                  SizedBox(height: 20),
+                  SizedBox(height: 10),
                   //Categories(),
                   ListingsSection(title: 'Services'),
                 ],

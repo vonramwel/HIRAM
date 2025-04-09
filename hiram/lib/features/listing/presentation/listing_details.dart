@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../model/listing_model.dart';
 import '../../auth/service/database.dart';
-import '../../transaction/presentation/rent_request_screen.dart'; // Import the rent request screen
+import '../../transaction/presentation/rent_request_screen.dart';
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
-
   const ListingDetailsPage({super.key, required this.listing});
 
   @override
@@ -29,7 +28,6 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
     try {
       Map<String, dynamic>? userData =
           await _databaseMethods.getUserData(widget.listing.userId);
-
       if (userData != null && mounted) {
         setState(() {
           _postedBy = userData['name'] ?? 'Unknown User';
@@ -52,12 +50,13 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.listing.title)),
+      appBar: AppBar(title: const Text('Listing Details')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Image Carousel or Placeholder
             widget.listing.images.isNotEmpty
                 ? CarouselSlider(
                     options: CarouselOptions(
@@ -75,7 +74,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Image.asset(
-                            'assets/images/placeholder.png', // Updated placeholder image URL,
+                            'assets/images/placeholder.png',
                             fit: BoxFit.cover,
                             width: double.infinity,
                           ),
@@ -84,7 +83,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     }).toList(),
                   )
                 : Container(
-                    height: 200,
+                    height: 250, // Match Carousel height
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: Colors.grey[300],
@@ -93,40 +92,64 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     child:
                         const Icon(Icons.image, size: 100, color: Colors.grey),
                   ),
+
             const SizedBox(height: 20),
-            Text(
-              widget.listing.title,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Category: ${widget.listing.category}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Type: ${widget.listing.type}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Price: ₱${widget.listing.price.toStringAsFixed(2)}',
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.green),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              widget.listing.description,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
+
+            // Posted By
             Text(
               _isLoading ? 'Loading user...' : 'Posted by: $_postedBy',
               style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
             ),
+
+            const SizedBox(height: 10),
+
+            // Title
+            _buildTextField('Title', widget.listing.title),
+
+            const SizedBox(height: 10),
+
+            // Description
+            _buildTextField('Description', widget.listing.description),
+
+            const SizedBox(height: 10),
+
+            // Type
+            _buildTextField('Type', widget.listing.type),
+
+            const SizedBox(height: 10),
+
+            // Category
+            _buildTextField('Category', widget.listing.category),
+
+            const SizedBox(height: 10),
+
+            // Price and Price Unit
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTextField(
+                      'Price', '₱${widget.listing.price.toStringAsFixed(2)}'),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: _buildTextField('Price Unit', '')), // Price Unit
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // Preferred Means of Transaction
+            _buildTextField('Preferred Means of Transaction', ''),
+
+            const SizedBox(height: 10),
+
+            // Location
+            _buildTextField('Location',
+                '${widget.listing.barangay ?? ''}, ${widget.listing.municipality ?? ''}'),
+
             const SizedBox(height: 20),
+
+            // Rent Button
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -137,11 +160,35 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                   ),
                 );
               },
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+              ),
               child: const Text("Rent"),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 5),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: Text(value),
+        ),
+      ],
     );
   }
 }
