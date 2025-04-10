@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import '../service/transaction_service.dart';
 import '../model/transaction_model.dart';
 import '../../auth/service/auth.dart';
 import '../../auth/service/database.dart';
 import '../../review/presentation/review_screen.dart';
+import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'common_widgets.dart'; // Assuming common widgets are imported here
 
 class TransactionDetails extends StatefulWidget {
   final TransactionModel transaction;
@@ -18,17 +21,19 @@ class TransactionDetails extends StatefulWidget {
 class _TransactionDetailsState extends State<TransactionDetails> {
   String? _userId;
   String? _generatedCode;
-  String otherUserName = 'Loading...';
-  String otherUserLabel = 'User';
+  String _otherUserName = 'Loading...';
+  String _otherUserLabel = 'User';
   final TransactionService _transactionService = TransactionService();
   final AuthMethods _authMethods = AuthMethods();
   final DatabaseMethods _databaseMethods = DatabaseMethods();
   bool _hasShownReviewDialog = false;
+  List<String> _listingImages = [];
 
   @override
   void initState() {
     super.initState();
     _fetchUserId();
+    _fetchListingImages();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.transaction.status == "Completed") {
         _navigateToReviewIfNeeded();
@@ -52,7 +57,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
         : widget.transaction.ownerId;
 
     setState(() {
-      otherUserLabel =
+      _otherUserLabel =
           currentUserId == widget.transaction.ownerId ? 'Renter' : 'Owner';
     });
 
@@ -60,13 +65,34 @@ class _TransactionDetailsState extends State<TransactionDetails> {
       Map<String, dynamic>? userData =
           await _databaseMethods.getUserData(otherUserId);
       setState(() {
-        otherUserName = userData?['name'] ?? 'Unknown User';
+        _otherUserName = userData?['name'] ?? 'Unknown User';
       });
     } catch (e) {
       setState(() {
-        otherUserName = 'Error loading user';
+        _otherUserName = 'Error loading user';
       });
     }
+  }
+
+  Future<void> _fetchListingImages() async {
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('listing')
+          .doc(widget.transaction.listingId)
+          .get();
+
+      List<String> images =
+          List<String>.from(doc['listingImages'] ?? <String>[]);
+      setState(() {
+        _listingImages = images;
+      });
+    } catch (e) {
+      print('Error fetching listing images: $e');
+    }
+  }
+
+  String formatDateTime(DateTime dateTime) {
+    return DateFormat('MM-dd-yyyy hh:mm a').format(dateTime.toLocal());
   }
 
   void _generateTransactionCode() async {
@@ -77,6 +103,10 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     });
     Navigator.pop(context);
 
+    _showGeneratedCodeDialog(code);
+  }
+
+  void _showGeneratedCodeDialog(String code) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -209,65 +239,70 @@ class _TransactionDetailsState extends State<TransactionDetails> {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Transaction Details")),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("$otherUserLabel Name: $otherUserName"),
-            Text("Payment Method: ${widget.transaction.paymentMethod}"),
-            Text("Start Date: ${widget.transaction.startDate.toLocal()}"),
-            Text("End Date: ${widget.transaction.endDate.toLocal()}"),
-            Text("Notes: ${widget.transaction.notes}"),
-            Text("Status: ${widget.transaction.status}"),
+            ImageCarousel(imageUrls: _listingImages),
+            const SizedBox(height: 20),
+            CustomTextField(
+                label: "$_otherUserLabel Name", value: _otherUserName),
+            const SizedBox(height: 10),
+            CustomTextField(
+                label: "Payment Method",
+                value: widget.transaction.paymentMethod),
+            const SizedBox(height: 10),
+            CustomTwoFields(
+              label1: "Start Date",
+              value1: formatDateTime(widget.transaction.startDate),
+              label2: "End Date",
+              value2: formatDateTime(widget.transaction.endDate),
+            ),
+            const SizedBox(height: 10),
+            CustomTextField(
+                label: "Total Price",
+                value: widget.transaction.totalPrice.toString()),
+            const SizedBox(height: 10),
+            CustomTextField(label: "Notes", value: widget.transaction.notes),
+            const SizedBox(height: 10),
+            CustomTextField(label: "Status", value: widget.transaction.status),
             const SizedBox(height: 20),
             if (isOwner && isApproved && isStartDateToday) ...[
-              ElevatedButton(
-                onPressed: _generateTransactionCode,
-                child: const Text("Generate Transaction Code"),
-              ),
+              CustomButton(
+                  label: "Generate Transaction Code",
+                  onPressed: _generateTransactionCode),
               if (_generatedCode != null)
                 Text("Generated Code: $_generatedCode"),
-              ElevatedButton(
-                onPressed: () => _updateTransactionStatus("Cancelled"),
-                child: const Text("Cancel Transaction"),
-              ),
+              CustomButton(
+                  label: "Cancel Transaction",
+                  onPressed: () => _updateTransactionStatus("Cancelled")),
             ],
             if (isRenter && isApproved && isStartDateToday) ...[
-              ElevatedButton(
-                onPressed: _showInputDialog,
-                child: const Text("Input Code"),
-              ),
+              CustomButton(label: "Input Code", onPressed: _showInputDialog),
             ],
             if (isOwner && !isApproved && !isLent && !isCompleted) ...[
-              ElevatedButton(
-                onPressed: () => _updateTransactionStatus("Approved"),
-                child: const Text("Approve"),
-              ),
-              ElevatedButton(
-                onPressed: () => _updateTransactionStatus("Disapproved"),
-                child: const Text("Disapprove"),
-              ),
+              CustomButton(
+                  label: "Accept",
+                  onPressed: () => _updateTransactionStatus("Approved")),
+              CustomButton(
+                  label: "Decline",
+                  onPressed: () => _updateTransactionStatus("Disapproved")),
             ],
             if (isRenter && !isApproved && !isLent && !isCompleted) ...[
-              ElevatedButton(
-                onPressed: () => _updateTransactionStatus("Cancelled"),
-                child: const Text("Cancel Transaction"),
-              ),
+              CustomButton(
+                  label: "Cancel Transaction",
+                  onPressed: () => _updateTransactionStatus("Cancelled")),
             ],
             if (isRenter && isLent && isEndDateToday) ...[
-              ElevatedButton(
-                onPressed: _generateTransactionCode,
-                child: const Text("Generate Transaction Code"),
-              ),
+              CustomButton(
+                  label: "Generate Transaction Code",
+                  onPressed: _generateTransactionCode),
               if (_generatedCode != null)
                 Text("Generated Code: $_generatedCode"),
             ],
             if (isOwner && isLent && isEndDateToday) ...[
-              ElevatedButton(
-                onPressed: _showInputDialog,
-                child: const Text("Input Code"),
-              ),
+              CustomButton(label: "Input Code", onPressed: _showInputDialog),
             ],
           ],
         ),

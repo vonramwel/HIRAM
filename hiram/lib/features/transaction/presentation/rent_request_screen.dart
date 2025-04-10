@@ -5,7 +5,7 @@ import '../model/transaction_model.dart';
 import '../service/transaction_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../auth/service/database.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+import 'common_widgets.dart'; // Importing the custom widgets
 
 class RentRequestScreen extends StatefulWidget {
   final Listing listing;
@@ -189,40 +189,6 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
     Navigator.pop(context);
   }
 
-  Widget _buildTextField(String label, String value) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 5),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: Text(value),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTwoFields(
-      String label1, String value1, String label2, String value2) {
-    return Row(
-      children: [
-        Expanded(child: _buildTextField(label1, value1)),
-        const SizedBox(width: 10),
-        Expanded(child: _buildTextField(label2, value2)),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -249,48 +215,30 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              widget.listing.images.isNotEmpty
-                  ? CarouselSlider(
-                      options:
-                          CarouselOptions(height: 180, enlargeCenterPage: true),
-                      items: widget.listing.images.map((imageUrl) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            imageUrl,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        );
-                      }).toList(),
-                    )
-                  : Container(
-                      height: 180,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child:
-                          const Icon(Icons.image, size: 80, color: Colors.grey),
-                    ),
+              ImageCarousel(
+                  imageUrls: widget.listing.images), // Using ImageCarousel
               const SizedBox(height: 10),
               Text('Posted by: $_postedBy',
                   style: const TextStyle(fontStyle: FontStyle.italic)),
               const SizedBox(height: 10),
-              _buildTextField('Listing', widget.listing.title),
+              CustomTextField(label: 'Listing', value: widget.listing.title),
               const SizedBox(height: 10),
-              _buildTwoFields(
-                  'Price',
-                  '₱${widget.listing.price.toStringAsFixed(2)}',
-                  'Unit',
-                  widget.listing.priceUnit),
+              CustomTwoFields(
+                label1: 'Price',
+                value1: '₱${widget.listing.price.toStringAsFixed(2)}',
+                label2: 'Unit',
+                value2: widget.listing.priceUnit,
+              ),
               const SizedBox(height: 10),
-              _buildTextField('Preferred Transaction',
-                  widget.listing.preferredTransaction ?? 'Not specified'),
+              CustomTextField(
+                  label: 'Preferred Transaction',
+                  value:
+                      widget.listing.preferredTransaction ?? 'Not specified'),
               const SizedBox(height: 10),
-              _buildTextField('Location',
-                  '${widget.listing.barangay ?? ''}, ${widget.listing.municipality ?? ''}'),
+              CustomTextField(
+                  label: 'Location',
+                  value:
+                      '${widget.listing.barangay ?? ''}, ${widget.listing.municipality ?? ''}'),
               const SizedBox(height: 10),
               ListTile(
                 title: Text('Start: ${_formatDateTime(_startDateTime)}'),
