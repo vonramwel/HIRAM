@@ -7,7 +7,9 @@ import '../../auth/service/database.dart';
 import '../../review/presentation/review_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'common_widgets.dart'; // Assuming common widgets are imported here
+import 'common_widgets.dart';
+import 'generated_code_dialog.dart';
+import 'input_code_dialog.dart';
 
 class TransactionDetails extends StatefulWidget {
   final TransactionModel transaction;
@@ -103,87 +105,15 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     });
     Navigator.pop(context);
 
-    _showGeneratedCodeDialog(code);
-  }
-
-  void _showGeneratedCodeDialog(String code) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Code Generated"),
-        content: Text("Transaction code: $code"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("OK"),
-          ),
-        ],
-      ),
-    );
+    GenerateCodeDialog.show(context, code);
   }
 
   void _showInputDialog() {
-    TextEditingController codeController = TextEditingController();
-
-    showDialog(
+    InputCodeDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Enter Transaction Code"),
-        content: TextField(
-          controller: codeController,
-          decoration: const InputDecoration(hintText: "Enter 6-digit code"),
-          keyboardType: TextInputType.number,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              bool isValid = await _transactionService.validateTransactionCode(
-                widget.transaction.transactionId,
-                codeController.text,
-                widget.transaction.status,
-              );
-
-              if (isValid && widget.transaction.status == "Approved") {
-                await _updateTransactionStatus("Lent");
-                Navigator.pop(context);
-                _showTransactionCompletedDialog(
-                    "Transaction has been marked as Lent.");
-              } else if (isValid && widget.transaction.status == "Lent") {
-                await _updateTransactionStatus("Completed");
-                Navigator.pop(context);
-                _showTransactionCompletedDialog(
-                    "Transaction has been marked as Completed.");
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text("Invalid code. Please try again.")),
-                );
-              }
-            },
-            child: const Text("Submit"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showTransactionCompletedDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Success"),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("OK"),
-          ),
-        ],
-      ),
+      transactionId: widget.transaction.transactionId,
+      status: widget.transaction.status,
+      updateStatusCallback: _updateTransactionStatus,
     );
   }
 
