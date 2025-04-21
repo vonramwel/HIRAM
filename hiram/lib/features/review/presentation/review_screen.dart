@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -106,6 +105,52 @@ class _ReviewScreenState extends State<ReviewScreen> {
       if (isLender) 'hasReviewedByLender': true,
     });
 
+    // ✅ Update listing rating if reviewed by renter
+    if (isRenter) {
+      final listingRef = FirebaseFirestore.instance
+          .collection('listings')
+          .doc(widget.transaction.listingId);
+
+      final listingSnap = await listingRef.get();
+      if (listingSnap.exists) {
+        final data = listingSnap.data();
+        final currentRating = (data?['rating'] ?? 0).toDouble();
+        final currentRatingCount = (data?['ratingCount'] ?? 0);
+
+        final newRatingCount = currentRatingCount + 1;
+        final newAverageRating =
+            ((currentRating * currentRatingCount) + _rating) / newRatingCount;
+
+        await listingRef.update({
+          'rating': double.parse(newAverageRating.toStringAsFixed(2)),
+          'ratingCount': newRatingCount,
+        });
+      }
+    } else {
+      // ✅ Update listing rating if reviewed by lender
+      final lenderRef = FirebaseFirestore.instance
+          .collection('User')
+          .doc(widget.transaction.renterId);
+      final lenderSnap = await lenderRef.get();
+
+      if (lenderSnap.exists) {
+        final lenderData = lenderSnap.data();
+        final currentUserRating = (lenderData?['rating'] ?? 0).toDouble();
+        final currentRatingCount = (lenderData?['ratingCount'] ?? 0);
+
+        final newRatingCount = currentRatingCount + 1;
+        final newAverageUserRating =
+            ((currentUserRating * currentRatingCount) + _rating) /
+                newRatingCount;
+
+        await lenderRef.update({
+          'rating': double.parse(newAverageUserRating.toStringAsFixed(2)),
+          'ratingCount': newRatingCount,
+        });
+      }
+      // ✅ Also update lender's rating in the users collection
+    }
+
     setState(() {
       _isSubmitting = false;
     });
@@ -159,7 +204,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text("Report User"),
+                      child: const Text("Report User"),
                     ),
                   ],
                 ),

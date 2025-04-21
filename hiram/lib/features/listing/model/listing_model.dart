@@ -4,7 +4,8 @@ class Listing {
   String description;
   String category;
   String type; // "Products for Rent" or "Services for Hire"
-  double? rating; // Initially null
+  double? rating; // Average rating
+  int? ratingCount; // Number of ratings
   double price;
   String priceUnit;
   String userId; // User who posted the listing
@@ -25,6 +26,7 @@ class Listing {
     required this.category,
     required this.type,
     this.rating,
+    this.ratingCount,
     required this.price,
     required this.priceUnit,
     required this.userId,
@@ -43,6 +45,7 @@ class Listing {
         "category": category,
         "type": type,
         "rating": rating,
+        "ratingCount": ratingCount,
         "price": price,
         "priceUnit": priceUnit,
         "userId": userId,
@@ -61,6 +64,7 @@ class Listing {
         category: json["category"],
         type: json["type"],
         rating: json["rating"]?.toDouble(),
+        ratingCount: json["ratingCount"],
         price: json["price"].toDouble(),
         priceUnit: json["priceUnit"],
         userId: json["userId"],
