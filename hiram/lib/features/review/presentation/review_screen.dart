@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../transaction/model/transaction_model.dart';
 import '../model/review_model.dart';
-import '../service/review_service.dart'; // ✅ Added this line
 import '../../auth/service/auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ReviewScreen extends StatefulWidget {
   final TransactionModel transaction;
@@ -18,6 +20,47 @@ class _ReviewScreenState extends State<ReviewScreen> {
   final TextEditingController _commentController = TextEditingController();
   int _rating = 0;
   bool _isSubmitting = false;
+  List<XFile> _selectedImages = [];
+  String? _currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    AuthMethods().getCurrentUserId().then((id) {
+      setState(() {
+        _currentUserId = id;
+      });
+    });
+  }
+
+  Future<void> _pickImages() async {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile> images = await picker.pickMultiImage();
+
+    if (images.length > 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can only upload up to 3 images.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _selectedImages = images;
+    });
+  }
+
+  Future<List<String>> _uploadImages(String reviewId) async {
+    List<String> downloadUrls = [];
+    for (int i = 0; i < _selectedImages.length; i++) {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('review_images/$reviewId/image_$i.jpg');
+      await ref.putFile(File(_selectedImages[i].path));
+      final url = await ref.getDownloadURL();
+      downloadUrls.add(url);
+    }
+    return downloadUrls;
+  }
 
   void _submitReview() async {
     if (_rating == 0 || _commentController.text.isEmpty) {
@@ -31,9 +74,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
       _isSubmitting = true;
     });
 
-    final currentUserId = await AuthMethods().getCurrentUserId();
-    final isRenter = currentUserId == widget.transaction.renterId;
-    final isLender = currentUserId == widget.transaction.ownerId;
+    final isRenter = _currentUserId == widget.transaction.renterId;
+    final isLender = _currentUserId == widget.transaction.ownerId;
+
+    final newDocRef = FirebaseFirestore.instance.collection('Reviews').doc();
+    final reviewId = newDocRef.id;
+
+    final imageUrls = await _uploadImages(reviewId);
 
     final review = ReviewModel(
       renterId: widget.transaction.renterId,
@@ -42,13 +89,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
       rating: _rating,
       comment: _commentController.text,
       reviewedBy: isRenter ? 'renter' : 'lender',
+      transactionId: widget.transaction.transactionId,
+      listingId: widget.transaction.listingId,
+      imageUrls: imageUrls,
     );
 
-    // ✅ Save the review to Firestore using the service
-    final reviewService = ReviewService();
-    await reviewService.submitReview(review);
+    await newDocRef.set(review.toMap());
 
-    // ✅ Update the appropriate flag in Firestore
     final transactionRef = FirebaseFirestore.instance
         .collection('transactions')
         .doc(widget.transaction.transactionId);
@@ -57,6 +104,52 @@ class _ReviewScreenState extends State<ReviewScreen> {
       if (isRenter) 'hasReviewedByRenter': true,
       if (isLender) 'hasReviewedByLender': true,
     });
+
+    // ✅ Update listing rating if reviewed by renter
+    if (isRenter) {
+      final listingRef = FirebaseFirestore.instance
+          .collection('listings')
+          .doc(widget.transaction.listingId);
+
+      final listingSnap = await listingRef.get();
+      if (listingSnap.exists) {
+        final data = listingSnap.data();
+        final currentRating = (data?['rating'] ?? 0).toDouble();
+        final currentRatingCount = (data?['ratingCount'] ?? 0);
+
+        final newRatingCount = currentRatingCount + 1;
+        final newAverageRating =
+            ((currentRating * currentRatingCount) + _rating) / newRatingCount;
+
+        await listingRef.update({
+          'rating': double.parse(newAverageRating.toStringAsFixed(2)),
+          'ratingCount': newRatingCount,
+        });
+      }
+    } else {
+      // ✅ Update listing rating if reviewed by lender
+      final lenderRef = FirebaseFirestore.instance
+          .collection('User')
+          .doc(widget.transaction.renterId);
+      final lenderSnap = await lenderRef.get();
+
+      if (lenderSnap.exists) {
+        final lenderData = lenderSnap.data();
+        final currentUserRating = (lenderData?['rating'] ?? 0).toDouble();
+        final currentRatingCount = (lenderData?['ratingCount'] ?? 0);
+
+        final newRatingCount = currentRatingCount + 1;
+        final newAverageUserRating =
+            ((currentUserRating * currentRatingCount) + _rating) /
+                newRatingCount;
+
+        await lenderRef.update({
+          'rating': double.parse(newAverageUserRating.toStringAsFixed(2)),
+          'ratingCount': newRatingCount,
+        });
+      }
+      // ✅ Also update lender's rating in the users collection
+    }
 
     setState(() {
       _isSubmitting = false;
@@ -70,50 +163,145 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_currentUserId == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final isRenter = _currentUserId == widget.transaction.renterId;
+    final ratingLabel = isRenter ? 'Rate the product' : 'Rate the renter';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Write a Review')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Transaction ID: ${widget.transaction.transactionId}',
-            ),
-            const SizedBox(height: 10),
-            const Text('Rate the transaction:'),
-            Row(
-              children: List.generate(5, (index) {
-                return IconButton(
-                  icon: Icon(
-                    _rating > index ? Icons.star : Icons.star_border,
-                    color: _rating > index ? Colors.yellow : Colors.grey,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Review Transaction',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        // TODO: Implement report logic
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text("Report User"),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    return IconButton(
+                      icon: Icon(
+                        _rating > index ? Icons.star : Icons.star_border,
+                        color: Colors.black,
+                        size: 32,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _rating = index + 1;
+                        });
+                      },
+                    );
+                  }),
+                ),
+                Text(
+                  ratingLabel,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 24),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Additional Notes',
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _rating = index + 1;
-                    });
-                  },
-                );
-              }),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _commentController,
+                  decoration: InputDecoration(
+                    hintText: 'Write your comment here...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                  ),
+                  maxLines: 5,
+                ),
+                const SizedBox(height: 20),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _selectedImages
+                      .map((image) => ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              File(image.path),
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                            ),
+                          ))
+                      .toList(),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: _selectedImages.length >= 3 ? null : _pickImages,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.black),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Add Images (up to 3)',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting ? null : _submitReview,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isSubmitting
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Submit'),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _commentController,
-              decoration: const InputDecoration(
-                labelText: 'Comments',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 5,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isSubmitting ? null : _submitReview,
-              child: _isSubmitting
-                  ? const CircularProgressIndicator()
-                  : const Text('Submit Review'),
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -35,7 +35,7 @@ class TransactionService {
 
   Future<String> generateTransactionCode(String transactionId) async {
     final random = Random();
-    String generatedCode = (100000 + random.nextInt(900000)).toString();
+    String generatedCode = (1000 + random.nextInt(9000)).toString();
 
     await _firestore.collection('transactions').doc(transactionId).update({
       'transactionCode': generatedCode,

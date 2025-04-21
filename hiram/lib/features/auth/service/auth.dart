@@ -67,7 +67,12 @@ class AuthMethods {
           "email": userDetails.email,
           "name": userDetails.displayName,
           "imgUrl": userDetails.photoURL,
-          "id": userDetails.uid
+          "id": userDetails.uid,
+          "rating": null, // or 0.0 if preferred
+          "ratingCount": 0,
+          "credibilityScore": 0,
+          "contactNumber": "",
+          "address": "",
         };
 
         await DatabaseMethods().addUser(userDetails.uid, userInfoMap).then((_) {
@@ -91,6 +96,11 @@ class AuthMethods {
           "email": user.email,
           "name": fullName,
           "imgUrl": null,
+          "rating": null, // or 0.0 if preferred
+          "ratingCount": 0,
+          "credibilityScore": 0,
+          "contactNumber": "",
+          "address": "",
         };
 
         await DatabaseMethods().addUser(user.uid, userInfoMap);
