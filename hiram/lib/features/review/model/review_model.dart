@@ -4,7 +4,10 @@ class ReviewModel {
   final DateTime date;
   final int rating;
   final String comment;
-  final String reviewedBy; // "renter" or "lender"
+  final String reviewedBy;
+  final String transactionId;
+  final String listingId;
+  final List<String> imageUrls; // ✅ Added
 
   ReviewModel({
     required this.renterId,
@@ -13,6 +16,9 @@ class ReviewModel {
     required this.rating,
     required this.comment,
     required this.reviewedBy,
+    required this.transactionId,
+    required this.listingId,
+    this.imageUrls = const [], // ✅ Added
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +29,9 @@ class ReviewModel {
       'rating': rating,
       'comment': comment,
       'reviewedBy': reviewedBy,
+      'transactionId': transactionId,
+      'listingId': listingId,
+      'imageUrls': imageUrls, // ✅ Added
     };
   }
 
@@ -34,6 +43,9 @@ class ReviewModel {
       rating: map['rating'],
       comment: map['comment'],
       reviewedBy: map['reviewedBy'],
+      transactionId: map['transactionId'],
+      listingId: map['listingId'],
+      imageUrls: List<String>.from(map['imageUrls'] ?? []), // ✅ Added
     );
   }
 }

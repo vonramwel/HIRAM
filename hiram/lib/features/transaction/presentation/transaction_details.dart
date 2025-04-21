@@ -167,6 +167,12 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     bool isEndDateToday =
         widget.transaction.endDate.toLocal().day == DateTime.now().day;
 
+    bool shouldShowReviewButton = isCompleted &&
+        ((_userId == widget.transaction.renterId &&
+                !widget.transaction.hasReviewedByRenter) ||
+            (_userId == widget.transaction.ownerId &&
+                !widget.transaction.hasReviewedByLender));
+
     return Scaffold(
       appBar: AppBar(title: const Text("Transaction Details")),
       body: SingleChildScrollView(
@@ -198,6 +204,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             const SizedBox(height: 10),
             CustomTextField(label: "Status", value: widget.transaction.status),
             const SizedBox(height: 20),
+
             if (isOwner && isApproved && isStartDateToday) ...[
               CustomButton(
                   label: "Generate Transaction Code",
@@ -233,6 +240,33 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             ],
             if (isOwner && isLent && isEndDateToday) ...[
               CustomButton(label: "Input Code", onPressed: _showInputDialog),
+            ],
+
+            /// REVIEW BUTTON IF NOT YET SUBMITTED
+            if (shouldShowReviewButton) ...[
+              const SizedBox(height: 20),
+              CustomButton(
+                label: "Leave a Review",
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReviewScreen(
+                        transaction: widget.transaction,
+                      ),
+                    ),
+                  );
+
+                  // Simulate review submission by updating local state
+                  setState(() {
+                    if (_userId == widget.transaction.renterId) {
+                      widget.transaction.hasReviewedByRenter = true;
+                    } else if (_userId == widget.transaction.ownerId) {
+                      widget.transaction.hasReviewedByLender = true;
+                    }
+                  });
+                },
+              ),
             ],
           ],
         ),
