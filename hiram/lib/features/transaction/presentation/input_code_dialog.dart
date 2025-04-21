@@ -9,7 +9,7 @@ class InputCodeDialog {
     required Future<void> Function(String newStatus) updateStatusCallback,
   }) {
     final TransactionService _transactionService = TransactionService();
-    final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+    final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
     final List<TextEditingController> _controllers =
         List.generate(6, (_) => TextEditingController());
 
@@ -57,7 +57,7 @@ class InputCodeDialog {
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(6, (index) {
+                children: List.generate(4, (index) {
                   return Container(
                     width: 48,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -81,7 +81,7 @@ class InputCodeDialog {
                         ),
                       ),
                       onChanged: (value) {
-                        if (value.isNotEmpty && index < 5) {
+                        if (value.isNotEmpty && index < 3) {
                           _focusNodes[index + 1].requestFocus();
                         } else if (value.isEmpty && index > 0) {
                           _focusNodes[index - 1].requestFocus();
