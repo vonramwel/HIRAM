@@ -33,7 +33,7 @@ class _UserProfileState extends State<UserProfile> {
           _userName = userData['name'] ?? 'Unknown User';
           _itemsRentedOut = userData['itemsRentedOut'] ?? 0;
           _itemsRenting = userData['itemsRenting'] ?? 0;
-          _credibilityScore = userData['credibilityScore'] ?? 0.0;
+          _credibilityScore = (userData['credibilityScore'] ?? 0).toDouble();
         });
       }
     }
