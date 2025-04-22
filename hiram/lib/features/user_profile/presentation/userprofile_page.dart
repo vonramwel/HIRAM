@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth/service/database.dart';
 
 class UserProfilePage extends StatefulWidget {
@@ -10,33 +9,31 @@ class UserProfilePage extends StatefulWidget {
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseMethods _databaseMethods = DatabaseMethods();
 
   String _userName = 'Loading...';
   int _itemsRentedOut = 0;
   int _itemsRenting = 0;
   double _credibilityScore = 0.0;
+  String _profileImageUrl = '';
 
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
+    _loadUserData();
   }
 
-  Future<void> _fetchUserData() async {
-    User? user = _auth.currentUser;
-    if (user != null) {
-      Map<String, dynamic>? userData =
-          await _databaseMethods.getUserData(user.uid);
-      if (userData != null && mounted) {
-        setState(() {
-          _userName = userData['name'] ?? 'Unknown User';
-          _itemsRentedOut = userData['itemsRentedOut'] ?? 0;
-          _itemsRenting = userData['itemsRenting'] ?? 0;
-          _credibilityScore = (userData['credibilityScore'] ?? 0).toDouble();
-        });
-      }
+  Future<void> _loadUserData() async {
+    Map<String, dynamic>? userData =
+        await _databaseMethods.getCurrentUserData();
+    if (userData != null && mounted) {
+      setState(() {
+        _userName = userData['name'] ?? 'Unknown User';
+        _itemsRentedOut = userData['itemsRentedOut'] ?? 0;
+        _itemsRenting = userData['itemsRenting'] ?? 0;
+        _credibilityScore = (userData['credibilityScore'] ?? 0).toDouble();
+        _profileImageUrl = userData['imgUrl'] ?? '';
+      });
     }
   }
 
@@ -96,10 +93,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 40,
-              backgroundColor: Colors.grey,
-              child: Icon(Icons.person, size: 50, color: Colors.white),
+              backgroundColor: Colors.grey.shade300,
+              backgroundImage: _profileImageUrl.isNotEmpty
+                  ? NetworkImage(_profileImageUrl)
+                  : null,
+              child: _profileImageUrl.isEmpty
+                  ? const Icon(Icons.person, size: 50, color: Colors.white)
+                  : null,
             ),
             const SizedBox(height: 10),
             Text(

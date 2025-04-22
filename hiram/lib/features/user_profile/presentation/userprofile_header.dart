@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../auth/service/database.dart'; // Import DatabaseMethods
+import '../../auth/service/database.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -10,32 +9,31 @@ class UserProfile extends StatefulWidget {
 }
 
 class _UserProfileState extends State<UserProfile> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseMethods _databaseMethods = DatabaseMethods();
+
   String _userName = 'Loading...';
   int _itemsRentedOut = 0;
   int _itemsRenting = 0;
   double _credibilityScore = 0.0;
+  String _profileImageUrl = '';
 
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
+    _loadUserData();
   }
 
-  Future<void> _fetchUserData() async {
-    User? user = _auth.currentUser;
-    if (user != null) {
-      Map<String, dynamic>? userData =
-          await _databaseMethods.getUserData(user.uid);
-      if (userData != null && mounted) {
-        setState(() {
-          _userName = userData['name'] ?? 'Unknown User';
-          _itemsRentedOut = userData['itemsRentedOut'] ?? 0;
-          _itemsRenting = userData['itemsRenting'] ?? 0;
-          _credibilityScore = (userData['credibilityScore'] ?? 0).toDouble();
-        });
-      }
+  Future<void> _loadUserData() async {
+    Map<String, dynamic>? userData =
+        await _databaseMethods.getCurrentUserData();
+    if (userData != null && mounted) {
+      setState(() {
+        _userName = userData['name'] ?? 'Unknown User';
+        _itemsRentedOut = userData['itemsRentedOut'] ?? 0;
+        _itemsRenting = userData['itemsRenting'] ?? 0;
+        _credibilityScore = (userData['credibilityScore'] ?? 0).toDouble();
+        _profileImageUrl = userData['imgUrl'] ?? '';
+      });
     }
   }
 
@@ -80,7 +78,16 @@ class _UserProfileState extends State<UserProfile> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          const CircleAvatar(radius: 40, backgroundColor: Colors.grey),
+          CircleAvatar(
+            radius: 40,
+            backgroundColor: Colors.grey,
+            backgroundImage: _profileImageUrl.isNotEmpty
+                ? NetworkImage(_profileImageUrl)
+                : null,
+            child: _profileImageUrl.isEmpty
+                ? const Icon(Icons.person, size: 40, color: Colors.white)
+                : null,
+          ),
           const SizedBox(height: 10),
           Text(
             _userName,
