@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../auth/service/database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../transaction/presentation/common_widgets.dart';
+import '../../../common_widgets/common_widgets.dart';
 import '../../../data/philippine_locations.dart';
 
 class UserProfileDetails extends StatefulWidget {
@@ -27,10 +27,15 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
 
+  bool _isInitialized = false;
+
   @override
-  void initState() {
-    super.initState();
-    _loadUserData();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _loadUserData();
+      _isInitialized = true;
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -38,9 +43,28 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
     Map<String, dynamic>? userData =
         await _databaseMethods.getCurrentUserData();
     if (userData != null && mounted) {
-      _address = userData['address'] ?? '';
-      List<String> addressParts = _address.split(', ').reversed.toList();
+      final address = userData['address'] ?? '';
+      final addressParts = address.split(', ').reversed.toList();
+
+      String? region, municipality, barangay;
+      if (addressParts.length == 3) {
+        region = addressParts[2];
+        municipality = addressParts[1];
+        barangay = addressParts[0];
+
+        if (!philippineLocations.containsKey(region)) region = null;
+        if (region != null &&
+            !philippineLocations[region]!.containsKey(municipality)) {
+          municipality = null;
+        }
+        if (municipality != null &&
+            !philippineLocations[region]![municipality]!.contains(barangay)) {
+          barangay = null;
+        }
+      }
+
       setState(() {
+        _address = address;
         _name = userData['name'] ?? 'Unknown';
         _email = user?.email ?? '';
         _phone = userData['contactNumber'] ?? '';
@@ -49,12 +73,9 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
         _phoneController.text = _phone;
         _bioController.text = _bio;
 
-        // Attempt to split address into components if possible
-        if (addressParts.length == 3) {
-          _selectedRegion = addressParts[2];
-          _selectedMunicipality = addressParts[1];
-          _selectedBarangay = addressParts[0];
-        }
+        _selectedRegion = region;
+        _selectedMunicipality = municipality;
+        _selectedBarangay = barangay;
       });
     }
   }
@@ -72,7 +93,7 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
       'bio': _bioController.text,
     });
 
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context, true); // return to previous screen
   }
 
   InputDecoration _fieldDecoration(String label) {
@@ -108,7 +129,10 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               decoration: _fieldDecoration('Region'),
-              value: _selectedRegion,
+              value: _selectedRegion != null &&
+                      philippineLocations.keys.contains(_selectedRegion)
+                  ? _selectedRegion
+                  : null,
               items: philippineLocations.keys
                   .map((region) =>
                       DropdownMenuItem(value: region, child: Text(region)))
@@ -120,13 +144,17 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
                   _selectedBarangay = null;
                 });
               },
-              validator: (value) => value == null ? 'Select a region' : null,
             ),
             const SizedBox(height: 10),
             if (_selectedRegion != null)
               DropdownButtonFormField<String>(
                 decoration: _fieldDecoration('Municipality'),
-                value: _selectedMunicipality,
+                value: _selectedMunicipality != null &&
+                        philippineLocations[_selectedRegion]!
+                            .keys
+                            .contains(_selectedMunicipality)
+                    ? _selectedMunicipality
+                    : null,
                 items: philippineLocations[_selectedRegion]!
                     .keys
                     .map((municipality) => DropdownMenuItem(
@@ -143,7 +171,12 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
             if (_selectedMunicipality != null)
               DropdownButtonFormField<String>(
                 decoration: _fieldDecoration('Barangay'),
-                value: _selectedBarangay,
+                value: _selectedBarangay != null &&
+                        philippineLocations[_selectedRegion]![
+                                _selectedMunicipality]!
+                            .contains(_selectedBarangay)
+                    ? _selectedBarangay
+                    : null,
                 items: philippineLocations[_selectedRegion]![
                         _selectedMunicipality]!
                     .map((barangay) => DropdownMenuItem(

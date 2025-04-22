@@ -10,6 +10,11 @@ class DatabaseMethods {
     return _firestore.collection("User").doc(userId).set(userInfoMap);
   }
 
+  Future<bool> checkUserExists(String uid) async {
+    DocumentSnapshot doc = await _firestore.collection('User').doc(uid).get();
+    return doc.exists;
+  }
+
   /// Retrieves data of a specific user by their user ID.
   Future<Map<String, dynamic>?> getUserData(String userId) async {
     try {

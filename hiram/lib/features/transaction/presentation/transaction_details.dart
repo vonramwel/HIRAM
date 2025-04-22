@@ -7,7 +7,7 @@ import '../../auth/service/database.dart';
 import '../../review/presentation/review_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'common_widgets.dart';
+import '../../../common_widgets/common_widgets.dart';
 import 'generated_code_dialog.dart';
 import 'input_code_dialog.dart';
 
