@@ -5,10 +5,12 @@ class DatabaseMethods {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  /// Adds a new user document to Firestore under the "User" collection.
   Future<void> addUser(String userId, Map<String, dynamic> userInfoMap) {
     return _firestore.collection("User").doc(userId).set(userInfoMap);
   }
 
+  /// Retrieves data of a specific user by their user ID.
   Future<Map<String, dynamic>?> getUserData(String userId) async {
     try {
       DocumentSnapshot userDoc =
@@ -22,6 +24,7 @@ class DatabaseMethods {
     return null;
   }
 
+  /// Retrieves the currently signed-in user's data.
   Future<Map<String, dynamic>?> getCurrentUserData() async {
     try {
       final User? currentUser = _auth.currentUser;
@@ -32,5 +35,20 @@ class DatabaseMethods {
       print('Error fetching current user data: $e');
     }
     return null;
+  }
+
+  /// Updates the currently signed-in user's data.
+  Future<void> updateCurrentUserData(Map<String, dynamic> newData) async {
+    try {
+      final User? currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        await _firestore
+            .collection("User")
+            .doc(currentUser.uid)
+            .update(newData);
+      }
+    } catch (e) {
+      print('Error updating user data: $e');
+    }
   }
 }

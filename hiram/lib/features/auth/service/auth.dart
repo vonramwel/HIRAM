@@ -73,6 +73,7 @@ class AuthMethods {
           "credibilityScore": 0,
           "contactNumber": "",
           "address": "",
+          "bio": "",
         };
 
         await DatabaseMethods().addUser(userDetails.uid, userInfoMap).then((_) {
@@ -101,6 +102,7 @@ class AuthMethods {
           "credibilityScore": 0,
           "contactNumber": "",
           "address": "",
+          "bio": "",
         };
 
         await DatabaseMethods().addUser(user.uid, userInfoMap);
