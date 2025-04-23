@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../model/listing_model.dart';
 import '../../auth/service/database.dart';
 import '../../transaction/presentation/rent_request_screen.dart';
@@ -16,16 +17,24 @@ class ListingDetailsPage extends StatefulWidget {
 class _ListingDetailsPageState extends State<ListingDetailsPage> {
   String _postedBy = 'Loading...';
   bool _isLoading = true;
+  bool _isOwner = false;
   final DatabaseMethods _databaseMethods = DatabaseMethods();
 
   @override
   void initState() {
     super.initState();
-    _fetchUserName();
+    _fetchUserData();
   }
 
-  Future<void> _fetchUserName() async {
+  Future<void> _fetchUserData() async {
     try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        setState(() {
+          _isOwner = currentUser.uid == widget.listing.userId;
+        });
+      }
+
       Map<String, dynamic>? userData =
           await _databaseMethods.getUserData(widget.listing.userId);
       if (userData != null && mounted) {
@@ -52,17 +61,18 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10.0),
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black87,
-                foregroundColor: Colors.white,
+          if (!_isOwner)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black87,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("Contact Seller"),
               ),
-              child: const Text("Contact Seller"),
-            ),
-          )
+            )
         ],
       ),
       body: SingleChildScrollView(
@@ -194,23 +204,24 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
 
             const SizedBox(height: 20),
 
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        RentRequestScreen(listing: widget.listing),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                backgroundColor: Colors.black87,
-                foregroundColor: Colors.white,
+            if (!_isOwner)
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          RentRequestScreen(listing: widget.listing),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: Colors.black87,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("Rent"),
               ),
-              child: const Text("Rent"),
-            ),
           ],
         ),
       ),

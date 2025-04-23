@@ -121,4 +121,36 @@ class TransactionHelpers {
 
     return totalExpenses;
   }
+
+  Future<List<Map<String, dynamic>>> getTopUserListingsByRating(
+      {int limit = 2}) async {
+    try {
+      final userId = await _authMethods.getCurrentUserId();
+      if (userId == null) return [];
+
+      // Try to get listings ordered by rating
+      final ratedListingsSnapshot = await _firestore
+          .collection('listings')
+          .where('userId', isEqualTo: userId)
+          .orderBy('rating', descending: true)
+          .limit(limit)
+          .get();
+
+      if (ratedListingsSnapshot.docs.isNotEmpty) {
+        return ratedListingsSnapshot.docs.map((doc) => doc.data()).toList();
+      }
+
+      // If no listings have a rating, just fetch any listing
+      final fallbackSnapshot = await _firestore
+          .collection('listings')
+          .where('userId', isEqualTo: userId)
+          .limit(limit)
+          .get();
+
+      return fallbackSnapshot.docs.map((doc) => doc.data()).toList();
+    } catch (e) {
+      print('Error fetching top listings: $e');
+      return [];
+    }
+  }
 }

@@ -75,4 +75,5 @@ class Listing {
         municipality: json["municipality"],
         barangay: json["barangay"],
       );
+  static Listing fromMap(Map<String, dynamic> map) => fromJson(map);
 }

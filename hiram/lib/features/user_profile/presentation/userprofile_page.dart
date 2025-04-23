@@ -1,8 +1,10 @@
 // lib/user/pages/userprofile_page.dart
 import 'package:flutter/material.dart';
 import '../../auth/service/database.dart';
-import 'userprofile_details.dart';
 import '../service/analytics_service.dart';
+import '../../listing/model/listing_model.dart';
+import '../../listing/widgets/listing_card.dart';
+import 'userprofile_details.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -24,12 +26,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
   int _pendingTransactions = 0;
 
   double _totalExpenses = 0.0;
-
   String _profileImageUrl = '';
   double _rating = 0.0;
   double _totalRevenue = 0.0;
 
   late TextEditingController _bioController;
+  List<Listing> _topListings = [];
 
   @override
   void initState() {
@@ -57,6 +59,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
         await _transactionHelpers.getTotalRevenueForCurrentUser();
     final totalExpenses =
         await _transactionHelpers.getTotalExpensesForCurrentUser();
+    final topListingsData =
+        await _transactionHelpers.getTopUserListingsByRating(limit: 2);
 
     if (userData != null && mounted) {
       setState(() {
@@ -73,6 +77,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _pendingTransactions = pendingTx;
         _totalRevenue = totalRevenue;
         _totalExpenses = totalExpenses;
+
+        _topListings = topListingsData
+            .map<Listing>((data) => Listing.fromMap(data))
+            .toList();
       });
     }
   }
@@ -107,28 +115,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopListingCard() {
-    return Container(
-      width: 150,
-      height: 150,
-      margin: const EdgeInsets.only(right: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.image, size: 50, color: Colors.grey),
-            SizedBox(height: 8),
-            Text("Listing Name", style: TextStyle(color: Colors.grey)),
           ],
         ),
       ),
@@ -244,11 +230,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ],
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  _buildTopListingCard(),
-                  _buildTopListingCard(),
-                ],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _topListings
+                      .map((listing) => Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ListingCard(listing: listing),
+                          ))
+                      .toList(),
+                ),
               ),
             ],
           ),

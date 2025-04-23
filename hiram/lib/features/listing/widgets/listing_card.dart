@@ -60,7 +60,7 @@ class _ListingCardState extends State<ListingCard> {
       },
       child: SizedBox(
         width: 250,
-        height: 500,
+        height: 200,
         child: Card(
           color: const Color.fromARGB(215, 198, 196, 196),
           shape:
