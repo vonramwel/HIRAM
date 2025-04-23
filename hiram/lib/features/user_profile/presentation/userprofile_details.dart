@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import '../../auth/service/database.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import '../../auth/service/database.dart';
 import '../../../common_widgets/common_widgets.dart';
 import '../../../data/philippine_locations.dart';
 
@@ -19,6 +23,7 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
   String _phone = '';
   String _address = '';
   String _bio = '';
+  String? _profileImageUrl;
 
   String? _selectedRegion;
   String? _selectedMunicipality;
@@ -27,7 +32,10 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
 
+  final ImagePicker _picker = ImagePicker();
+
   bool _isInitialized = false;
+  bool _isUploading = false;
 
   @override
   void didChangeDependencies() {
@@ -40,9 +48,7 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
 
   Future<void> _loadUserData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return; // Handle case where user is not logged in
-    }
+    if (user == null) return;
 
     Map<String, dynamic>? userData =
         await _databaseMethods.getCurrentUserData();
@@ -59,19 +65,13 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
 
         if (!philippineLocations.containsKey(region)) {
           region = null;
-        }
-
-        if (region != null &&
-            !philippineLocations[region]!.containsKey(municipality)) {
           municipality = null;
-        }
-
-        if (region != null &&
-            municipality != null &&
-            barangay != null &&
-            (!philippineLocations[region]!.containsKey(municipality) ||
-                !philippineLocations[region]![municipality]!
-                    .contains(barangay))) {
+          barangay = null;
+        } else if (!philippineLocations[region]!.containsKey(municipality)) {
+          municipality = null;
+          barangay = null;
+        } else if (!philippineLocations[region]![municipality]!
+            .contains(barangay)) {
           barangay = null;
         }
       }
@@ -82,10 +82,10 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
         _email = user.email ?? '';
         _phone = userData['contactNumber'] ?? '';
         _bio = userData['bio'] ?? '';
+        _profileImageUrl = userData['imgUrl'];
 
         _phoneController.text = _phone;
         _bioController.text = _bio;
-
         _selectedRegion = region;
         _selectedMunicipality = municipality;
         _selectedBarangay = barangay;
@@ -109,6 +109,37 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
     if (mounted) Navigator.pop(context, true);
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    if (pickedFile == null) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_images')
+          .child('${user.uid}.jpg');
+      await ref.putFile(File(pickedFile.path));
+      final downloadUrl = await ref.getDownloadURL();
+
+      await _databaseMethods.updateCurrentUserData({'imgUrl': downloadUrl});
+
+      setState(() {
+        _profileImageUrl = downloadUrl;
+        _isUploading = false;
+      });
+    } catch (e) {
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
+    }
+  }
+
   InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
@@ -125,14 +156,34 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
+            Center(
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 48,
+                    backgroundImage: _profileImageUrl != null
+                        ? NetworkImage(_profileImageUrl!)
+                        : const AssetImage('assets/images/placeholder.png')
+                            as ImageProvider,
+                    backgroundColor: Colors.grey.shade200,
+                  ),
+                  const SizedBox(height: 10),
+                  _isUploading
+                      ? const CircularProgressIndicator()
+                      : TextButton(
+                          onPressed: _pickAndUploadImage,
+                          child: const Text("Change Profile Picture"),
+                        ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             CustomTextField(label: 'Name', value: _name),
             const SizedBox(height: 12),
             CustomTextField(label: 'Email', value: _email),
             const SizedBox(height: 20),
-            const Text(
-              'Edit Contact Info',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
+            const Text('Edit Contact Info',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 10),
             TextField(
               controller: _phoneController,
@@ -140,12 +191,19 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 10),
+            if (_address.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: TextField(
+                  readOnly: true,
+                  decoration: _fieldDecoration('Current Address'),
+                  controller: TextEditingController(text: _address),
+                ),
+              ),
+            const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               decoration: _fieldDecoration('Region'),
-              value: _selectedRegion != null &&
-                      philippineLocations.keys.contains(_selectedRegion)
-                  ? _selectedRegion
-                  : null,
+              value: _selectedRegion,
               items: philippineLocations.keys
                   .map((region) =>
                       DropdownMenuItem(value: region, child: Text(region)))
@@ -162,12 +220,7 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
             if (_selectedRegion != null)
               DropdownButtonFormField<String>(
                 decoration: _fieldDecoration('Municipality'),
-                value: _selectedMunicipality != null &&
-                        philippineLocations[_selectedRegion]!
-                            .keys
-                            .contains(_selectedMunicipality)
-                    ? _selectedMunicipality
-                    : null,
+                value: _selectedMunicipality,
                 items: philippineLocations[_selectedRegion]!
                     .keys
                     .map((municipality) => DropdownMenuItem(
@@ -184,12 +237,7 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
             if (_selectedMunicipality != null)
               DropdownButtonFormField<String>(
                 decoration: _fieldDecoration('Barangay'),
-                value: _selectedBarangay != null &&
-                        philippineLocations[_selectedRegion]![
-                                _selectedMunicipality]!
-                            .contains(_selectedBarangay)
-                    ? _selectedBarangay
-                    : null,
+                value: _selectedBarangay,
                 items: philippineLocations[_selectedRegion]![
                         _selectedMunicipality]!
                     .map((barangay) => DropdownMenuItem(
