@@ -1,6 +1,8 @@
+// lib/user/pages/userprofile_page.dart
 import 'package:flutter/material.dart';
 import '../../auth/service/database.dart';
 import 'userprofile_details.dart';
+import '../service/analytics_service.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -11,15 +13,22 @@ class UserProfilePage extends StatefulWidget {
 
 class _UserProfilePageState extends State<UserProfilePage> {
   final DatabaseMethods _databaseMethods = DatabaseMethods();
+  final TransactionHelpers _transactionHelpers = TransactionHelpers();
 
   String _userName = 'Loading...';
   String _phone = '';
   String _address = '';
   String _bio = '';
-  int _itemsRentedOut = 0;
-  int _itemsRenting = 0;
-  double _credibilityScore = 0.0;
+  int _completedTransactions = 0;
+  int _activeTransactions = 0;
+  int _pendingTransactions = 0;
+
+  double _totalExpenses = 0.0;
+
   String _profileImageUrl = '';
+  double _rating = 0.0;
+  double _totalRevenue = 0.0;
+
   late TextEditingController _bioController;
 
   @override
@@ -36,8 +45,19 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   Future<void> _loadUserData() async {
-    Map<String, dynamic>? userData =
-        await _databaseMethods.getCurrentUserData();
+    final userData = await _databaseMethods.getCurrentUserData();
+    final completedTx =
+        await _transactionHelpers.getCompletedTransactionCountForCurrentUser();
+    final activeTx =
+        await _transactionHelpers.getActiveTransactionCountForCurrentUser();
+    final pendingTx =
+        await _transactionHelpers.getPendingTransactionCountForCurrentUser();
+    final rating = await _transactionHelpers.getUserRating();
+    final totalRevenue =
+        await _transactionHelpers.getTotalRevenueForCurrentUser();
+    final totalExpenses =
+        await _transactionHelpers.getTotalExpensesForCurrentUser();
+
     if (userData != null && mounted) {
       setState(() {
         _userName = userData['name'] ?? 'Unknown User';
@@ -45,10 +65,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _address = userData['address'] ?? '';
         _bio = userData['bio'] ?? '';
         _bioController.text = _bio;
-        _itemsRentedOut = userData['itemsRentedOut'] ?? 0;
-        _itemsRenting = userData['itemsRenting'] ?? 0;
-        _credibilityScore = (userData['credibilityScore'] ?? 0).toDouble();
+
         _profileImageUrl = userData['imgUrl'] ?? '';
+        _rating = rating ?? 0.0;
+        _completedTransactions = completedTx;
+        _activeTransactions = activeTx;
+        _pendingTransactions = pendingTx;
+        _totalRevenue = totalRevenue;
+        _totalExpenses = totalExpenses;
       });
     }
   }
@@ -60,28 +84,31 @@ class _UserProfilePageState extends State<UserProfilePage> {
         color: Colors.black,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -157,17 +184,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
               if (_phone.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(
-                  _phone,
-                  style: const TextStyle(color: Colors.black54),
-                ),
+                Text(_phone, style: const TextStyle(color: Colors.black54)),
               ],
               if (_address.isNotEmpty) ...[
                 const SizedBox(height: 2),
-                Text(
-                  _address,
-                  style: const TextStyle(color: Colors.black45),
-                ),
+                Text(_address, style: const TextStyle(color: Colors.black45)),
               ],
               const SizedBox(height: 10),
               TextField(
@@ -191,13 +212,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 physics: const NeverScrollableScrollPhysics(),
                 childAspectRatio: 2,
                 children: [
-                  _buildStatCard('Number of Items Lent', '$_itemsRentedOut'),
-                  _buildStatCard('Number of Items Renting', '$_itemsRenting'),
-                  _buildStatCard('Revenue', '100,000'),
-                  _buildStatCard('User Credibility Score',
-                      '${_credibilityScore.toStringAsFixed(0)}%'),
-                  _buildStatCard('Rental Duration Statistics', 'nnn'),
-                  _buildStatCard('Number of Completed Transactions', '10'),
+                  _buildStatCard(
+                      'Number of Active Transactions', '$_activeTransactions'),
+                  _buildStatCard('Number of Pending Transactions',
+                      '$_pendingTransactions'),
+                  _buildStatCard('Number of Completed Transactions',
+                      '$_completedTransactions'),
+                  _buildStatCard(
+                      'User Rating', '${_rating.toStringAsFixed(1)} / 5.0'),
+                  _buildStatCard(
+                      'Total Earnings', '₱${_totalRevenue.toStringAsFixed(2)}'),
+                  _buildStatCard('Total Expenses',
+                      '₱${_totalExpenses.toStringAsFixed(2)}'),
                 ],
               ),
               const SizedBox(height: 24),

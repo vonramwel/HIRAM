@@ -70,6 +70,7 @@ class AuthMethods {
           "contactNumber": "",
           "address": "",
           "bio": "",
+          "transactionsCompleted": 0,
         };
 
         bool userExists =
@@ -104,6 +105,7 @@ class AuthMethods {
           "contactNumber": "",
           "address": "",
           "bio": "",
+          "transactionsCompleted": 0,
         };
 
         await DatabaseMethods().addUser(user.uid, userInfoMap);

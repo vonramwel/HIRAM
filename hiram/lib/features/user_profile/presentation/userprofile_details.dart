@@ -40,8 +40,13 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
 
   Future<void> _loadUserData() async {
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return; // Handle case where user is not logged in
+    }
+
     Map<String, dynamic>? userData =
         await _databaseMethods.getCurrentUserData();
+
     if (userData != null && mounted) {
       final address = userData['address'] ?? '';
       final addressParts = address.split(', ').reversed.toList();
@@ -52,13 +57,21 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
         municipality = addressParts[1];
         barangay = addressParts[0];
 
-        if (!philippineLocations.containsKey(region)) region = null;
+        if (!philippineLocations.containsKey(region)) {
+          region = null;
+        }
+
         if (region != null &&
             !philippineLocations[region]!.containsKey(municipality)) {
           municipality = null;
         }
-        if (municipality != null &&
-            !philippineLocations[region]![municipality]!.contains(barangay)) {
+
+        if (region != null &&
+            municipality != null &&
+            barangay != null &&
+            (!philippineLocations[region]!.containsKey(municipality) ||
+                !philippineLocations[region]![municipality]!
+                    .contains(barangay))) {
           barangay = null;
         }
       }
@@ -66,7 +79,7 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
       setState(() {
         _address = address;
         _name = userData['name'] ?? 'Unknown';
-        _email = user?.email ?? '';
+        _email = user.email ?? '';
         _phone = userData['contactNumber'] ?? '';
         _bio = userData['bio'] ?? '';
 
@@ -93,7 +106,7 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
       'bio': _bioController.text,
     });
 
-    if (mounted) Navigator.pop(context, true); // return to previous screen
+    if (mounted) Navigator.pop(context, true);
   }
 
   InputDecoration _fieldDecoration(String label) {
