@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../auth/service/database.dart';
+import '../service/analytics_service.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -10,17 +11,20 @@ class UserProfile extends StatefulWidget {
 
 class _UserProfileState extends State<UserProfile> {
   final DatabaseMethods _databaseMethods = DatabaseMethods();
+  final TransactionHelpers _analyticsService = TransactionHelpers();
 
   String _userName = 'Loading...';
-  int _itemsRentedOut = 0;
-  int _itemsRenting = 0;
-  double _credibilityScore = 0.0;
   String _profileImageUrl = '';
+
+  int _activeTransactions = 0;
+  int _pendingTransactions = 0;
+  double _userRating = 0.0;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadAnalyticsData();
   }
 
   Future<void> _loadUserData() async {
@@ -29,44 +33,60 @@ class _UserProfileState extends State<UserProfile> {
     if (userData != null && mounted) {
       setState(() {
         _userName = userData['name'] ?? 'Unknown User';
-        _itemsRentedOut = userData['itemsRentedOut'] ?? 0;
-        _itemsRenting = userData['itemsRenting'] ?? 0;
-        _credibilityScore = (userData['credibilityScore'] ?? 0).toDouble();
         _profileImageUrl = userData['imgUrl'] ?? '';
+      });
+    }
+  }
+
+  Future<void> _loadAnalyticsData() async {
+    final active =
+        await _analyticsService.getActiveTransactionCountForCurrentUser();
+    final pending =
+        await _analyticsService.getPendingTransactionCountForCurrentUser();
+    final rating = await _analyticsService.getUserRating();
+
+    if (mounted) {
+      setState(() {
+        _activeTransactions = active;
+        _pendingTransactions = pending;
+        _userRating = rating ?? 0.0;
       });
     }
   }
 
   Widget _buildStatCard(String label, String value) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+      child: SizedBox(
+        height: 100, // Set a fixed height for consistency
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -96,11 +116,14 @@ class _UserProfileState extends State<UserProfile> {
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildStatCard('Number of Items\nRented Out', '$_itemsRentedOut'),
-              _buildStatCard('User Credibility\nScore',
-                  '${_credibilityScore.toStringAsFixed(0)}%'),
-              _buildStatCard('Number of Items\nRenting', '$_itemsRenting'),
+              _buildStatCard('Active Transactions', '$_activeTransactions'),
+              const SizedBox(width: 8),
+              _buildStatCard(
+                  'User Rating', '${_userRating.toStringAsFixed(1)}/ 5.0'),
+              const SizedBox(width: 8),
+              _buildStatCard('Pending Transactions', '$_pendingTransactions'),
             ],
           ),
         ],
