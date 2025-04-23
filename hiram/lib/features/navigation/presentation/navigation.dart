@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../listing/widgets/user_profile.dart';
+import '../../user_profile/presentation/userprofile_header.dart';
+import '../../user_profile/presentation/userprofile_page.dart';
 import '../../listing/widgets/categories.dart';
 import '../../listing/widgets/listings_section.dart';
 import '../../listing/presentation/add_listing.dart';
@@ -96,7 +97,7 @@ class _NavigationState extends State<Navigation> {
       case 3:
         return const ListingsSection(title: 'Products');
       case 4:
-        return const UserProfile();
+        return const UserProfilePage();
       default:
         return const Center(child: Text('Page not found'));
     }

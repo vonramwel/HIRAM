@@ -7,18 +7,15 @@ import '../../navigation/presentation/navigation.dart';
 class AuthMethods {
   final FirebaseAuth auth = FirebaseAuth.instance;
 
-  /// Get the currently signed-in user
   Future<User?> getCurrentUser() async {
     return auth.currentUser;
   }
 
-  /// Get the current user's UID
   Future<String> getCurrentUserId() async {
     User? user = auth.currentUser;
-    return user?.uid ?? ''; // Returns empty string if no user is signed in
+    return user?.uid ?? '';
   }
 
-  /// Sign in with email & password
   Future<void> signInWithEmail(
       BuildContext context, String email, String password) async {
     try {
@@ -44,7 +41,6 @@ class AuthMethods {
     }
   }
 
-  /// Sign in with Google
   Future<void> signInWithGoogle(BuildContext context) async {
     final GoogleSignIn googleSignIn = GoogleSignIn();
     final GoogleSignInAccount? googleSignInAccount =
@@ -68,17 +64,24 @@ class AuthMethods {
           "name": userDetails.displayName,
           "imgUrl": userDetails.photoURL,
           "id": userDetails.uid,
-          "rating": null, // or 0.0 if preferred
+          "rating": null,
           "ratingCount": 0,
           "credibilityScore": 0,
           "contactNumber": "",
           "address": "",
+          "bio": "",
+          "transactionsCompleted": 0,
         };
 
-        await DatabaseMethods().addUser(userDetails.uid, userInfoMap).then((_) {
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (context) => Navigation()));
-        });
+        bool userExists =
+            await DatabaseMethods().checkUserExists(userDetails.uid);
+
+        if (!userExists) {
+          await DatabaseMethods().addUser(userDetails.uid, userInfoMap);
+        }
+
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => Navigation()));
       }
     }
   }
@@ -96,11 +99,13 @@ class AuthMethods {
           "email": user.email,
           "name": fullName,
           "imgUrl": null,
-          "rating": null, // or 0.0 if preferred
+          "rating": null,
           "ratingCount": 0,
           "credibilityScore": 0,
           "contactNumber": "",
           "address": "",
+          "bio": "",
+          "transactionsCompleted": 0,
         };
 
         await DatabaseMethods().addUser(user.uid, userInfoMap);

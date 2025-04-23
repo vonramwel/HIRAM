@@ -5,7 +5,7 @@ import '../model/transaction_model.dart';
 import '../service/transaction_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../auth/service/database.dart';
-import 'common_widgets.dart'; // Importing the custom widgets
+import '../../../common_widgets/common_widgets.dart'; // Importing the custom widgets
 
 class RentRequestScreen extends StatefulWidget {
   final Listing listing;
