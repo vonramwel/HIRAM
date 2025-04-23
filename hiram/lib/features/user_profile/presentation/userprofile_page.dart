@@ -5,6 +5,7 @@ import '../service/analytics_service.dart';
 import '../../listing/model/listing_model.dart';
 import '../../listing/widgets/listing_card.dart';
 import 'userprofile_details.dart';
+import 'mylistings_page.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -215,17 +216,27 @@ class _UserProfilePageState extends State<UserProfilePage> {
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
+                children: [
                   Text(
                     'Top Listings',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  Text(
-                    'VIEW ALL LISTINGS',
-                    style: TextStyle(
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const MyListingsPage()),
+                      );
+                    },
+                    child: const Text(
+                      'VIEW ALL LISTINGS',
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey),
+                        color: Colors.grey,
+                      ),
+                    ),
                   ),
                 ],
               ),
