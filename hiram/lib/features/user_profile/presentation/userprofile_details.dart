@@ -1,12 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import '../../auth/service/database.dart';
 import '../../../common_widgets/common_widgets.dart';
 import '../../../data/philippine_locations.dart';
+import '../service/userprofile_service.dart';
 
 class UserProfileDetails extends StatefulWidget {
   const UserProfileDetails({super.key});
@@ -16,7 +12,7 @@ class UserProfileDetails extends StatefulWidget {
 }
 
 class _UserProfileDetailsState extends State<UserProfileDetails> {
-  final DatabaseMethods _databaseMethods = DatabaseMethods();
+  final UserProfileService _userProfileService = UserProfileService();
 
   String _name = '';
   String _email = '';
@@ -31,8 +27,6 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
 
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
-
-  final ImagePicker _picker = ImagePicker();
 
   bool _isInitialized = false;
   bool _isUploading = false;
@@ -50,8 +44,7 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    Map<String, dynamic>? userData =
-        await _databaseMethods.getCurrentUserData();
+    Map<String, dynamic>? userData = await _userProfileService.loadUserData();
 
     if (userData != null && mounted) {
       final address = userData['address'] ?? '';
@@ -100,43 +93,25 @@ class _UserProfileDetailsState extends State<UserProfileDetails> {
         ? '$_selectedBarangay, $_selectedMunicipality, $_selectedRegion'
         : _address;
 
-    await _databaseMethods.updateCurrentUserData({
-      'contactNumber': _phoneController.text,
-      'address': combinedAddress,
-      'bio': _bioController.text,
-    });
+    await _userProfileService.saveProfileChanges(
+      phone: _phoneController.text,
+      address: combinedAddress,
+      bio: _bioController.text,
+    );
 
     if (mounted) Navigator.pop(context, true);
   }
 
   Future<void> _pickAndUploadImage() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
-    if (pickedFile == null) return;
-
     setState(() => _isUploading = true);
 
-    try {
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('profile_images')
-          .child('${user.uid}.jpg');
-      await ref.putFile(File(pickedFile.path));
-      final downloadUrl = await ref.getDownloadURL();
+    final imageUrl = await _userProfileService.pickAndUploadImage();
 
-      await _databaseMethods.updateCurrentUserData({'imgUrl': downloadUrl});
-
+    if (mounted) {
       setState(() {
-        _profileImageUrl = downloadUrl;
+        _profileImageUrl = imageUrl;
         _isUploading = false;
       });
-    } catch (e) {
-      setState(() => _isUploading = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
     }
   }
 
