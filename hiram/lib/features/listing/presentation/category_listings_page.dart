@@ -3,6 +3,7 @@ import '../model/listing_model.dart';
 import '../service/listing_service.dart';
 import '../../auth/service/auth.dart';
 import 'listing_details.dart';
+import '../widgets/listing_card.dart'; // Importing the shared ListingCard widget
 
 class CategoryListingsPage extends StatelessWidget {
   final String category;
@@ -60,26 +61,20 @@ class CategoryListingsPage extends StatelessWidget {
                 itemCount: listings.length,
                 itemBuilder: (context, index) {
                   final listing = listings[index];
-                  return ListTile(
-                    leading: Image.network(
-                      listing.images.isNotEmpty
-                          ? listing.images.first
-                          : 'assets/images/placeholder.png',
-                      width: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Image.asset('assets/images/placeholder.png'),
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ListingDetailsPage(listing: listing),
+                          ),
+                        );
+                      },
+                      child: ListingCard(listing: listing),
                     ),
-                    title: Text(listing.title),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ListingDetailsPage(listing: listing),
-                        ),
-                      );
-                    },
                   );
                 },
               );
