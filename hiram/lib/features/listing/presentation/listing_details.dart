@@ -6,6 +6,7 @@ import '../model/listing_model.dart';
 import '../../auth/service/database.dart';
 import '../../transaction/presentation/rent_request_screen.dart';
 import '../../inbox/presentation/chat_page.dart';
+import '../../review/presentation/renter_reviews_page.dart';
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -127,7 +128,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
 
             // Rating and View Reviews
             Column(
-              children: const [
+              children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -141,15 +142,29 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                 Text("Rating: 4.95"),
                 SizedBox(height: 5),
                 ElevatedButton(
-                  onPressed: null,
-                  style: ButtonStyle(
-                    backgroundColor:
-                        MaterialStatePropertyAll<Color>(Colors.black87),
-                    foregroundColor:
-                        MaterialStatePropertyAll<Color>(Colors.white),
-                  ),
-                  child: Text("View Reviews"),
-                )
+                    onPressed: null,
+                    style: ButtonStyle(
+                      backgroundColor:
+                          MaterialStatePropertyAll<Color>(Colors.black87),
+                      foregroundColor:
+                          MaterialStatePropertyAll<Color>(Colors.white),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                RenterReviewsPage(listingId: widget.listing.id),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black87,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text("View Reviews"),
+                    ))
               ],
             ),
 
