@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../common_widgets/common_widgets.dart';
 import 'generated_code_dialog.dart';
 import 'input_code_dialog.dart';
+import '../../review/presentation/user_reviews_page.dart';
 
 class TransactionDetails extends StatefulWidget {
   final TransactionModel transaction;
@@ -184,6 +185,24 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             const SizedBox(height: 20),
             CustomTextField(
                 label: "$_otherUserLabel Name", value: _otherUserName),
+
+            if (isOwner && _userId != null) ...[
+              const SizedBox(height: 10),
+              CustomButton(
+                label: "View Renter Reviews",
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RenterReviewDetailsPage(
+                        renterId: widget.transaction.renterId,
+                        ownerId: widget.transaction.ownerId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
             const SizedBox(height: 10),
             CustomTextField(
                 label: "Payment Method",
