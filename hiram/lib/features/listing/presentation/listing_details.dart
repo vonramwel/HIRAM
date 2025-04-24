@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../model/listing_model.dart';
 import '../../auth/service/database.dart';
 import '../../transaction/presentation/rent_request_screen.dart';
+import '../../inbox/presentation/chat_page.dart';
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -63,16 +64,21 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
         actions: [
           if (!_isOwner)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0),
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black87,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text("Contact Seller"),
-              ),
-            )
+                padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatPage(
+                          receiverId: widget.listing.userId,
+                          receiverName: _postedBy,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text("Contact Seller"),
+                ))
         ],
       ),
       body: SingleChildScrollView(

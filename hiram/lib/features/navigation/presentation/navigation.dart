@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hiram/features/inbox/presentation/inbox_page.dart';
 import '../../user_profile/presentation/userprofile_header.dart';
 import '../../user_profile/presentation/userprofile_page.dart';
 import '../../listing/widgets/categories.dart';
@@ -95,7 +96,7 @@ class _NavigationState extends State<Navigation> {
           // TransactionsSection(title: 'Transactions as Renter'),
         ]));
       case 3:
-        return const ListingsSection(title: 'Products');
+        return const InboxPage();
       case 4:
         return const UserProfilePage();
       default:
