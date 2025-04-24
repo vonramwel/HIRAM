@@ -44,12 +44,16 @@ class _ChatPageState extends State<ChatPage> {
       'timestamp': FieldValue.serverTimestamp(),
     };
 
-    await _firestore
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .add(message);
+    final chatDoc = _firestore.collection('chats').doc(chatId);
 
+    final chatExists = (await chatDoc.get()).exists;
+    if (!chatExists) {
+      await chatDoc.set({
+        'participants': [currentUser.uid, widget.receiverId],
+      });
+    }
+
+    await chatDoc.collection('messages').add(message);
     _messageController.clear();
   }
 
