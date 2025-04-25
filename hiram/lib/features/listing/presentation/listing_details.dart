@@ -1,3 +1,4 @@
+// listing_details.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -6,7 +7,8 @@ import '../model/listing_model.dart';
 import '../../auth/service/database.dart';
 import '../../transaction/presentation/rent_request_screen.dart';
 import '../../review/presentation/renter_reviews_page.dart';
-import '../../user_profile/presentation/otheruser_page.dart'; // <-- Added import
+import '../../user_profile/presentation/otheruser_page.dart';
+import 'edit_listing_page.dart'; // <-- Added import
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -63,7 +65,19 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          if (!_isOwner)
+          if (_isOwner)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EditListingPage(listing: widget.listing),
+                  ),
+                );
+              },
+            )
+          else
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10.0),
               child: ElevatedButton(
@@ -127,7 +141,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                  children: const [
                     Icon(Icons.star_border),
                     Icon(Icons.star_border),
                     Icon(Icons.star_border),
@@ -135,8 +149,8 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     Icon(Icons.star_border),
                   ],
                 ),
-                Text("Rating: 4.95"),
-                SizedBox(height: 5),
+                const Text("Rating: 4.95"),
+                const SizedBox(height: 5),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
