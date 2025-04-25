@@ -76,4 +76,20 @@ class UserProfileService {
       return [];
     }
   }
+
+  Future<List<Map<String, dynamic>>> getListingsByUserId(String userId) async {
+    try {
+      final QuerySnapshot snapshot = await _firestore
+          .collection('listings')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
+    } catch (e) {
+      print('Error fetching listings by userId: $e');
+      return [];
+    }
+  }
 }
