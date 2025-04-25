@@ -5,8 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../model/listing_model.dart';
 import '../../auth/service/database.dart';
 import '../../transaction/presentation/rent_request_screen.dart';
-import '../../inbox/presentation/chat_page.dart';
 import '../../review/presentation/renter_reviews_page.dart';
+import '../../user_profile/presentation/otheruser_page.dart'; // <-- Added import
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -65,21 +65,21 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
         actions: [
           if (!_isOwner)
             Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatPage(
-                          receiverId: widget.listing.userId,
-                          receiverName: _postedBy,
-                        ),
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OtherUserProfilePage(
+                        userId: widget.listing.userId,
                       ),
-                    );
-                  },
-                  child: const Text("Contact Seller"),
-                ))
+                    ),
+                  );
+                },
+                child: const Text("Contact Seller"),
+              ),
+            )
         ],
       ),
       body: SingleChildScrollView(
@@ -87,7 +87,6 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Image Carousel or Placeholder
             widget.listing.images.isNotEmpty
                 ? CarouselSlider(
                     options: CarouselOptions(
@@ -123,10 +122,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     child:
                         const Icon(Icons.image, size: 80, color: Colors.grey),
                   ),
-
             const SizedBox(height: 10),
-
-            // Rating and View Reviews
             Column(
               children: [
                 Row(
@@ -142,43 +138,29 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                 Text("Rating: 4.95"),
                 SizedBox(height: 5),
                 ElevatedButton(
-                    onPressed: null,
-                    style: ButtonStyle(
-                      backgroundColor:
-                          MaterialStatePropertyAll<Color>(Colors.black87),
-                      foregroundColor:
-                          MaterialStatePropertyAll<Color>(Colors.white),
-                    ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                RenterReviewsPage(listingId: widget.listing.id),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black87,
-                        foregroundColor: Colors.white,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            RenterReviewsPage(listingId: widget.listing.id),
                       ),
-                      child: const Text("View Reviews"),
-                    ))
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black87,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("View Reviews"),
+                ),
               ],
             ),
-
             const SizedBox(height: 10),
-
-            // Posted By
             Text(
               _isLoading ? 'Loading user...' : 'Posted by: $_postedBy',
               style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
             ),
-
             const SizedBox(height: 10),
-
-            // Title
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -187,10 +169,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
-
             const SizedBox(height: 5),
-
-            // Description
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -198,33 +177,27 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                 style: const TextStyle(fontSize: 14),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // Form Fields Layout
             _buildTwoFields('Type', widget.listing.type, 'Category',
                 widget.listing.category),
-
             const SizedBox(height: 10),
-
             _buildTwoFields(
-                'Price',
-                '₱${widget.listing.price.toStringAsFixed(2)}',
-                'Price Unit',
-                widget.listing.priceUnit),
-
+              'Price',
+              '₱${widget.listing.price.toStringAsFixed(2)}',
+              'Price Unit',
+              widget.listing.priceUnit,
+            ),
             const SizedBox(height: 10),
-
-            _buildTextField('Preferred Means of Transaction',
-                widget.listing.preferredTransaction ?? 'Not specified'),
-
+            _buildTextField(
+              'Preferred Means of Transaction',
+              widget.listing.preferredTransaction ?? 'Not specified',
+            ),
             const SizedBox(height: 10),
-
-            _buildTextField('Location',
-                '${widget.listing.barangay ?? ''}, ${widget.listing.municipality ?? ''}'),
-
+            _buildTextField(
+              'Location',
+              '${widget.listing.barangay ?? ''}, ${widget.listing.municipality ?? ''}',
+            ),
             const SizedBox(height: 20),
-
             if (!_isOwner)
               ElevatedButton(
                 onPressed: () {
@@ -255,10 +228,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 5),
           Container(
             width: double.infinity,
