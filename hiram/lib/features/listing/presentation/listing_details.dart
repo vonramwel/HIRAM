@@ -77,7 +77,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     ),
                   );
                 },
-                child: const Text("Contact Seller"),
+                child: const Text("View Seller"),
               ),
             )
         ],

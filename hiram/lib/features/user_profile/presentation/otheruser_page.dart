@@ -111,7 +111,7 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
             },
             child: const Text(
               "Contact Seller",
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.black),
             ),
           )
         ],
