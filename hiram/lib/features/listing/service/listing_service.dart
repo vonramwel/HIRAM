@@ -13,7 +13,6 @@ class ListingService {
     await docRef.set(listing.toJson());
   }
 
-  // Uploads image to Firebase Storage and returns the URL
   Future<String> uploadImage(File image, String listingId) async {
     try {
       final ref = _storage.ref().child(
@@ -29,5 +28,16 @@ class ListingService {
     return _firestore.collection('listings').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => Listing.fromJson(doc.data())).toList();
     });
+  }
+
+  Future<void> updateListing(Listing listing) async {
+    try {
+      await _firestore
+          .collection('listings')
+          .doc(listing.id)
+          .update(listing.toJson());
+    } catch (e) {
+      throw Exception('Failed to update listing: $e');
+    }
   }
 }
