@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../listing/model/listing_model.dart';
 import '../../listing/widgets/listing_card.dart';
 
@@ -8,10 +9,18 @@ class ArchivedListingsPage extends StatelessWidget {
 
   Stream<List<Listing>> getArchivedListingsStream() {
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    final FirebaseAuth _auth = FirebaseAuth.instance;
+    final String? currentUserId = _auth.currentUser?.uid;
+
+    if (currentUserId == null) {
+      // Return an empty stream if no user is logged in
+      return Stream.value([]);
+    }
 
     return _firestore
         .collection('listings')
         .where('visibility', isEqualTo: 'archived')
+        .where('userId', isEqualTo: currentUserId)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => Listing.fromMap(doc.data() as Map<String, dynamic>))
@@ -47,7 +56,7 @@ class ArchivedListingsPage extends StatelessWidget {
                 padding: const EdgeInsets.all(8.0),
                 child: ListingCard(
                   listing: listing,
-                  userName: '', // Archived listings can skip userName
+                  userName: 'You', // Can skip since it's your own listings
                 ),
               );
             },
