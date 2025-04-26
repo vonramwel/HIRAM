@@ -10,6 +10,7 @@ import '../../review/presentation/renter_reviews_page.dart';
 import '../../user_profile/presentation/otheruser_page.dart';
 import 'edit_listing_page.dart';
 import '../../../common_widgets/confirmation_dialog.dart';
+import '../widgets/listing_action_service.dart'; // <-- Add this import
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -63,47 +64,19 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
     }
   }
 
-  Future<void> _updateVisibility(String status) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('listings')
-          .doc(widget.listing.id)
-          .update({'visibility': status});
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Listing ${status == 'archived' ? 'archived' : 'deleted'} successfully',
-          ),
-        ),
-      );
-
-      setState(() {
-        _currentListing.visibility = status;
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update listing')),
-      );
-    }
+  void _updateLocalVisibility(String status) {
+    setState(() {
+      _currentListing.visibility = status;
+    });
   }
 
-  Future<void> _handleAction(String action) async {
-    String title = action == 'archive' ? 'Archive Listing' : 'Delete Listing';
-    String content = action == 'archive'
-        ? 'Are you sure you want to archive this listing?'
-        : 'Are you sure you want to delete this listing?';
-
-    bool confirmed = await ConfirmationDialog.show(
-      context,
-      title: title,
-      content: content,
-      confirmText: action == 'archive' ? 'Archive' : 'Delete',
+  void _handleAction(String action) {
+    ListingActionService.handleAction(
+      context: context,
+      listingId: widget.listing.id,
+      action: action,
+      onVisibilityUpdated: _updateLocalVisibility,
     );
-
-    if (confirmed) {
-      _updateVisibility(action == 'archive' ? 'archived' : 'deleted');
-    }
   }
 
   @override
