@@ -9,7 +9,7 @@ import '../../transaction/presentation/rent_request_screen.dart';
 import '../../review/presentation/renter_reviews_page.dart';
 import '../../user_profile/presentation/otheruser_page.dart';
 import 'edit_listing_page.dart';
-import '../../../common_widgets/confirmation_dialog.dart'; // <-- ADD this import
+import '../../../common_widgets/confirmation_dialog.dart';
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -24,10 +24,12 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
   bool _isLoading = true;
   bool _isOwner = false;
   final DatabaseMethods _databaseMethods = DatabaseMethods();
+  late Listing _currentListing;
 
   @override
   void initState() {
     super.initState();
+    _currentListing = widget.listing;
     _fetchUserData();
   }
 
@@ -77,7 +79,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
       );
 
       setState(() {
-        widget.listing.visibility = status;
+        _currentListing.visibility = status;
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -106,192 +108,216 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          if (_isOwner) ...[
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EditListingPage(listing: widget.listing),
-                  ),
-                );
-              },
-            ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                _handleAction(value); // <-- CALL the confirmation dialog
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'archive',
-                  child: Text('Archive Listing'),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Delete Listing'),
-                ),
-              ],
-            ),
-          ] else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => OtherUserProfilePage(
-                        userId: widget.listing.userId,
-                      ),
-                    ),
-                  );
-                },
-                child: const Text("View Seller"),
-              ),
-            )
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            widget.listing.images.isNotEmpty
-                ? CarouselSlider(
-                    options: CarouselOptions(
-                      height: 180,
-                      enlargeCenterPage: true,
-                      enableInfiniteScroll: true,
-                      autoPlay: true,
-                    ),
-                    items: widget.listing.images.map((imageUrl) {
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          imageUrl,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Image.asset(
-                            'assets/images/placeholder.png',
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          ),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('listings')
+          .doc(widget.listing.id)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+
+          _currentListing = Listing.fromMap(data);
+
+          return Scaffold(
+            appBar: AppBar(
+              actions: [
+                if (_isOwner) ...[
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              EditListingPage(listing: _currentListing),
                         ),
                       );
-                    }).toList(),
-                  )
-                : Container(
-                    height: 180,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child:
-                        const Icon(Icons.image, size: 80, color: Colors.grey),
+                    },
                   ),
-            const SizedBox(height: 10),
-            Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.star_border),
-                    Icon(Icons.star_border),
-                    Icon(Icons.star_border),
-                    Icon(Icons.star_border),
-                    Icon(Icons.star_border),
-                  ],
-                ),
-                const Text("Rating: 4.95"),
-                const SizedBox(height: 5),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            RenterReviewsPage(listingId: widget.listing.id),
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      _handleAction(value);
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'archive',
+                        child: Text('Archive Listing'),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black87,
-                    foregroundColor: Colors.white,
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete Listing'),
+                      ),
+                    ],
                   ),
-                  child: const Text("View Reviews"),
-                ),
+                ] else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OtherUserProfilePage(
+                              userId: _currentListing.userId,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text("View Seller"),
+                    ),
+                  )
               ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              _isLoading ? 'Loading user...' : 'Posted by: $_postedBy',
-              style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
-            ),
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                widget.listing.title,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 5),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                widget.listing.description,
-                style: const TextStyle(fontSize: 14),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildTwoFields('Type', widget.listing.type, 'Category',
-                widget.listing.category),
-            const SizedBox(height: 10),
-            _buildTwoFields(
-              'Price',
-              '₱${widget.listing.price.toStringAsFixed(2)}',
-              'Price Unit',
-              widget.listing.priceUnit,
-            ),
-            const SizedBox(height: 10),
-            _buildTextField(
-              'Preferred Means of Transaction',
-              widget.listing.preferredTransaction ?? 'Not specified',
-            ),
-            const SizedBox(height: 10),
-            _buildTextField(
-              'Location',
-              '${widget.listing.barangay ?? ''}, ${widget.listing.municipality ?? ''}',
-            ),
-            const SizedBox(height: 20),
-            if (!_isOwner)
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          RentRequestScreen(listing: widget.listing),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _currentListing.images.isNotEmpty
+                      ? CarouselSlider(
+                          options: CarouselOptions(
+                            height: 180,
+                            enlargeCenterPage: true,
+                            enableInfiniteScroll: true,
+                            autoPlay: true,
+                          ),
+                          items: _currentListing.images.map((imageUrl) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                imageUrl,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Image.asset(
+                                  'assets/images/placeholder.png',
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        )
+                      : Container(
+                          height: 180,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.image,
+                              size: 80, color: Colors.grey),
+                        ),
+                  const SizedBox(height: 10),
+                  Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.star_border),
+                          Icon(Icons.star_border),
+                          Icon(Icons.star_border),
+                          Icon(Icons.star_border),
+                          Icon(Icons.star_border),
+                        ],
+                      ),
+                      const Text("Rating: 4.95"),
+                      const SizedBox(height: 5),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RenterReviewsPage(
+                                  listingId: _currentListing.id),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black87,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text("View Reviews"),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _isLoading ? 'Loading user...' : 'Posted by: $_postedBy',
+                    style: const TextStyle(
+                        fontSize: 14, fontStyle: FontStyle.italic),
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _currentListing.title,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold),
                     ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                  backgroundColor: Colors.black87,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text("Rent"),
+                  ),
+                  const SizedBox(height: 5),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _currentListing.description,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildTwoFields('Type', _currentListing.type, 'Category',
+                      _currentListing.category),
+                  const SizedBox(height: 10),
+                  _buildTwoFields(
+                    'Price',
+                    '₱${_currentListing.price.toStringAsFixed(2)}',
+                    'Price Unit',
+                    _currentListing.priceUnit,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTextField(
+                    'Preferred Means of Transaction',
+                    _currentListing.preferredTransaction ?? 'Not specified',
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTextField(
+                    'Location',
+                    '${_currentListing.barangay ?? ''}, ${_currentListing.municipality ?? ''}',
+                  ),
+                  const SizedBox(height: 20),
+                  if (!_isOwner)
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                RentRequestScreen(listing: _currentListing),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        backgroundColor: Colors.black87,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text("Rent"),
+                    ),
+                ],
               ),
-          ],
-        ),
-      ),
+            ),
+          );
+        } else if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else {
+          return const Scaffold(
+            body: Center(child: Text('Listing not found')),
+          );
+        }
+      },
     );
   }
 
