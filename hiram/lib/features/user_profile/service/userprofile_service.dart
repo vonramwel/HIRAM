@@ -77,6 +77,22 @@ class UserProfileService {
     }
   }
 
+  Stream<List<Map<String, dynamic>>> streamCurrentUserListings() async* {
+    final String? userId = await _authMethods.getCurrentUserId();
+    if (userId == null) {
+      yield [];
+      return;
+    }
+
+    yield* _firestore
+        .collection('listings')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => doc.data() as Map<String, dynamic>)
+            .toList());
+  }
+
   Future<List<Map<String, dynamic>>> getListingsByUserId(String userId) async {
     try {
       final QuerySnapshot snapshot = await _firestore

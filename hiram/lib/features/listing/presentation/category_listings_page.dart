@@ -1,23 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../model/listing_model.dart';
 import '../service/listing_service.dart';
 import '../../auth/service/auth.dart';
-import 'listing_details.dart';
-import '../widgets/listing_card.dart'; // Importing the shared ListingCard widget
+import '../widgets/listing_card.dart';
+import '../presentation/listing_details.dart';
 
-class CategoryListingsPage extends StatelessWidget {
+class CategoryListingsPage extends StatefulWidget {
   final String category;
   final String type; // Products or Services
 
   CategoryListingsPage({required this.category, required this.type});
 
+  @override
+  _CategoryListingsPageState createState() => _CategoryListingsPageState();
+}
+
+class _CategoryListingsPageState extends State<CategoryListingsPage> {
   final ListingService _listingService = ListingService();
+  final Map<String, String> preloadedUserNames = {}; // Cache for user names
+
+  Future<void> preloadUserNames(List<Listing> listings) async {
+    final uniqueUserIds = listings.map((l) => l.userId).toSet();
+
+    for (String userId in uniqueUserIds) {
+      if (!preloadedUserNames.containsKey(userId)) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('User')
+            .doc(userId)
+            .get();
+        if (userDoc.exists) {
+          preloadedUserNames[userId] =
+              userDoc.data()?['name'] ?? 'Unknown User';
+        } else {
+          preloadedUserNames[userId] = 'Unknown User';
+        }
+      }
+    }
+    setState(() {}); // Refresh UI after preloading names
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(category),
+        title: Text(widget.category),
       ),
       body: FutureBuilder<String>(
         future: AuthMethods().getCurrentUserId(),
@@ -46,10 +73,10 @@ class CategoryListingsPage extends StatelessWidget {
               final listings = snapshot.data!
                   .where((listing) =>
                       listing.userId != currentUserId &&
-                      listing.category == category &&
-                      ((type == 'Products' &&
+                      listing.category == widget.category &&
+                      ((widget.type == 'Products' &&
                               listing.type == 'Products for Rent') ||
-                          (type == 'Services' &&
+                          (widget.type == 'Services' &&
                               listing.type != 'Products for Rent')))
                   .toList();
 
@@ -57,10 +84,16 @@ class CategoryListingsPage extends StatelessWidget {
                 return const Center(child: Text('No listings found.'));
               }
 
+              // Start preloading usernames
+              preloadUserNames(listings);
+
               return ListView.builder(
                 itemCount: listings.length,
                 itemBuilder: (context, index) {
                   final listing = listings[index];
+                  final userName =
+                      preloadedUserNames[listing.userId] ?? 'Loading...';
+
                   return Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: GestureDetector(
@@ -73,7 +106,10 @@ class CategoryListingsPage extends StatelessWidget {
                           ),
                         );
                       },
-                      child: ListingCard(listing: listing),
+                      child: ListingCard(
+                        listing: listing,
+                        userName: userName,
+                      ),
                     ),
                   );
                 },

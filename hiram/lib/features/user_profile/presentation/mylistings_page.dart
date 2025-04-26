@@ -1,5 +1,6 @@
 // lib/user/pages/mylistings_page.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../listing/model/listing_model.dart';
 import '../../listing/widgets/listing_card.dart';
 import '../service/userprofile_service.dart';
@@ -13,22 +14,26 @@ class MyListingsPage extends StatefulWidget {
 
 class _MyListingsPageState extends State<MyListingsPage> {
   final UserProfileService _userProfileService = UserProfileService();
-  List<Listing> _myListings = [];
-  bool _isLoading = true;
+  final Map<String, String> preloadedUserNames = {}; // Cache for user names
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchMyListings();
-  }
+  Future<void> preloadUserNames(List<Listing> listings) async {
+    final uniqueUserIds = listings.map((l) => l.userId).toSet();
 
-  Future<void> _fetchMyListings() async {
-    final listingsData = await _userProfileService.getCurrentUserListings();
-    setState(() {
-      _myListings =
-          listingsData.map<Listing>((data) => Listing.fromMap(data)).toList();
-      _isLoading = false;
-    });
+    for (String userId in uniqueUserIds) {
+      if (!preloadedUserNames.containsKey(userId)) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('User')
+            .doc(userId)
+            .get();
+        if (userDoc.exists) {
+          preloadedUserNames[userId] =
+              userDoc.data()?['name'] ?? 'Unknown User';
+        } else {
+          preloadedUserNames[userId] = 'Unknown User';
+        }
+      }
+    }
+    setState(() {}); // Refresh UI after preloading names
   }
 
   @override
@@ -37,19 +42,43 @@ class _MyListingsPageState extends State<MyListingsPage> {
       appBar: AppBar(
         title: const Text("My Listings"),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _myListings.isEmpty
-              ? const Center(child: Text("You have no listings yet."))
-              : ListView.builder(
-                  itemCount: _myListings.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ListingCard(listing: _myListings[index]),
-                    );
-                  },
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _userProfileService.streamCurrentUserListings(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("You have no listings yet."));
+          }
+
+          final listings =
+              snapshot.data!.map((data) => Listing.fromMap(data)).toList();
+
+          // Preload usernames
+          preloadUserNames(listings);
+
+          return ListView.builder(
+            itemCount: listings.length,
+            itemBuilder: (context, index) {
+              final listing = listings[index];
+              final userName =
+                  preloadedUserNames[listing.userId] ?? 'Loading...';
+
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ListingCard(
+                  listing: listing,
+                  userName: userName,
                 ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

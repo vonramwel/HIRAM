@@ -23,7 +23,6 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
   String _address = '';
   String _bio = '';
   String _profileImageUrl = '';
-  List<Listing> _topListings = [];
 
   @override
   void initState() {
@@ -33,14 +32,9 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
 
   Future<void> _loadUserData() async {
     try {
-      // Get user info
       final DocumentSnapshot snapshot =
           await _firestore.collection('User').doc(widget.userId).get();
       final userData = snapshot.data() as Map<String, dynamic>?;
-
-      // Get listings
-      final listings =
-          await userProfileService.getListingsByUserId(widget.userId);
 
       if (userData != null && mounted) {
         setState(() {
@@ -49,10 +43,6 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
           _address = userData['address'] ?? '';
           _bio = userData['bio'] ?? '';
           _profileImageUrl = userData['imgUrl'] ?? '';
-          _topListings = listings
-              .map<Listing>((data) => Listing.fromMap(data))
-              .take(2)
-              .toList();
         });
       }
     } catch (e) {
@@ -165,11 +155,36 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                 ),
               ),
               const SizedBox(height: 10),
-              Column(
-                children: _topListings
-                    .map((listing) => ListingCard(listing: listing))
-                    .toList(),
-              )
+              StreamBuilder<QuerySnapshot>(
+                stream: _firestore
+                    .collection('listings')
+                    .where('userId', isEqualTo: widget.userId)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('No listings available.'));
+                  }
+
+                  final listings = snapshot.data!.docs
+                      .map((doc) =>
+                          Listing.fromMap(doc.data() as Map<String, dynamic>))
+                      .take(2) // Only show top 2 listings
+                      .toList();
+
+                  return Column(
+                    children: listings
+                        .map((listing) => ListingCard(
+                              listing: listing,
+                              userName: _userName, // ✅ Pass the userName here
+                            ))
+                        .toList(),
+                  );
+                },
+              ),
             ],
           ),
         ),
