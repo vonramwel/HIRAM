@@ -18,6 +18,7 @@ class Listing {
   String? region;
   String? municipality;
   String? barangay;
+  String? visibility; // <-- New field to track if the listing is archived
 
   Listing({
     required this.id,
@@ -37,6 +38,7 @@ class Listing {
     this.region,
     this.municipality,
     this.barangay,
+    this.visibility, // Default value is false (not archived)
   });
 
   Map<String, dynamic> toJson() => {
@@ -57,6 +59,7 @@ class Listing {
         "region": region,
         "municipality": municipality,
         "barangay": barangay,
+        "visibility": visibility, // <-- Include the new field in the JSON
       };
 
   static Listing fromJson(Map<String, dynamic> json) => Listing(
@@ -77,7 +80,9 @@ class Listing {
         region: json["region"],
         municipality: json["municipality"],
         barangay: json["barangay"],
+        visibility: json["visibility"], // <-- Default to false if not present
       );
+
   static Listing fromMap(Map<String, dynamic> map) => fromJson(map);
 
   Listing copyWith({
@@ -98,6 +103,7 @@ class Listing {
     String? region,
     String? municipality,
     String? barangay,
+    String? visibility, // <-- Allow updating the archived status
   }) {
     return Listing(
       id: id ?? this.id,
@@ -118,6 +124,7 @@ class Listing {
       region: region ?? this.region,
       municipality: municipality ?? this.municipality,
       barangay: barangay ?? this.barangay,
+      visibility: visibility ?? this.visibility, // <-- Update archived status
     );
   }
 }

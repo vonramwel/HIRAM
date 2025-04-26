@@ -8,7 +8,8 @@ import '../../auth/service/database.dart';
 import '../../transaction/presentation/rent_request_screen.dart';
 import '../../review/presentation/renter_reviews_page.dart';
 import '../../user_profile/presentation/otheruser_page.dart';
-import 'edit_listing_page.dart'; // <-- Added import
+import 'edit_listing_page.dart';
+import '../../../common_widgets/confirmation_dialog.dart'; // <-- ADD this import
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -60,12 +61,55 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
     }
   }
 
+  Future<void> _updateVisibility(String status) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('listings')
+          .doc(widget.listing.id)
+          .update({'visibility': status});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Listing ${status == 'archived' ? 'archived' : 'deleted'} successfully',
+          ),
+        ),
+      );
+
+      setState(() {
+        widget.listing.visibility = status;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update listing')),
+      );
+    }
+  }
+
+  Future<void> _handleAction(String action) async {
+    String title = action == 'archive' ? 'Archive Listing' : 'Delete Listing';
+    String content = action == 'archive'
+        ? 'Are you sure you want to archive this listing?'
+        : 'Are you sure you want to delete this listing?';
+
+    bool confirmed = await ConfirmationDialog.show(
+      context,
+      title: title,
+      content: content,
+      confirmText: action == 'archive' ? 'Archive' : 'Delete',
+    );
+
+    if (confirmed) {
+      _updateVisibility(action == 'archive' ? 'archived' : 'deleted');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          if (_isOwner)
+          if (_isOwner) ...[
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
@@ -76,8 +120,23 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                   ),
                 );
               },
-            )
-          else
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                _handleAction(value); // <-- CALL the confirmation dialog
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'archive',
+                  child: Text('Archive Listing'),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Delete Listing'),
+                ),
+              ],
+            ),
+          ] else
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10.0),
               child: ElevatedButton(
