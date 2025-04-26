@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../model/listing_model.dart';
 import '../service/listing_service.dart';
 import '../../../data/philippine_locations.dart';
@@ -73,6 +76,9 @@ class _EditListingPageState extends State<EditListingPage> {
     ],
   };
 
+  List<String> _imageUrls = []; // List to store image URLs
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
@@ -91,6 +97,9 @@ class _EditListingPageState extends State<EditListingPage> {
     _selectedRegion = widget.listing.region;
     _selectedMunicipality = widget.listing.municipality;
     _selectedBarangay = widget.listing.barangay;
+
+    _imageUrls = List<String>.from(widget
+        .listing.images); // Assuming images are stored in `listing.images`
   }
 
   @override
@@ -118,6 +127,7 @@ class _EditListingPageState extends State<EditListingPage> {
         region: _selectedRegion,
         municipality: _selectedMunicipality,
         barangay: _selectedBarangay,
+        images: _imageUrls, // Update the images field
       );
 
       await _listingService.updateListing(updatedListing);
@@ -125,6 +135,30 @@ class _EditListingPageState extends State<EditListingPage> {
         Navigator.pop(context);
       }
     }
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      // Upload image to Firebase Storage and get the download URL
+      final uploadTask = FirebaseStorage.instance
+          .ref()
+          .child('listings/${DateTime.now().toIso8601String()}.jpg')
+          .putFile(File(pickedFile.path));
+
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      setState(() {
+        _imageUrls.add(downloadUrl); // Add the new image URL to the list
+      });
+    }
+  }
+
+  Future<void> _removeImage(String imageUrl) async {
+    setState(() {
+      _imageUrls.remove(imageUrl); // Remove the image URL from the list
+    });
   }
 
   @override
@@ -334,6 +368,52 @@ class _EditListingPageState extends State<EditListingPage> {
                           validator: (value) =>
                               value == null ? 'Select a barangay' : null,
                         ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Image display section
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Uploaded Images'),
+                      const SizedBox(height: 10),
+                      if (_imageUrls.isNotEmpty)
+                        GridView.builder(
+                          shrinkWrap: true,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8.0,
+                            mainAxisSpacing: 8.0,
+                          ),
+                          itemCount: _imageUrls.length,
+                          itemBuilder: (context, index) {
+                            return Stack(
+                              children: [
+                                Image.network(_imageUrls[index]),
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.remove_circle),
+                                    onPressed: () {
+                                      _removeImage(_imageUrls[index]);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ElevatedButton(
+                        onPressed: _pickImage,
+                        child: const Text('Add Image'),
+                      ),
                     ],
                   ),
                 ),
