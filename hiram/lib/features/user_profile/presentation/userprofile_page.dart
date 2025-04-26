@@ -6,6 +6,7 @@ import '../../listing/model/listing_model.dart';
 import '../../listing/widgets/listing_card.dart';
 import 'userprofile_details.dart';
 import 'mylistings_page.dart';
+import 'archived_listings_page.dart'; // <--- NEW import
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -82,10 +83,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
             .toList();
       });
 
-      // Preload usernames after top listings are loaded
       await preloadUserNames(_topListings);
       if (mounted) {
-        setState(() {}); // Refresh UI after loading usernames
+        setState(() {});
       }
     }
   }
@@ -278,6 +278,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           ))
                       .toList(),
                 ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ArchivedListingsPage(),
+                    ),
+                  );
+                },
+                child: const Text('VIEW ALL ARCHIVED LISTINGS'),
               ),
             ],
           ),
