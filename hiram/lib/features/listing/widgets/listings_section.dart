@@ -87,6 +87,8 @@ class _ListingsSectionState extends State<ListingsSection> {
                       final listings = snapshot.data!
                           .where((listing) =>
                               listing.userId != currentUserId &&
+                              listing.visibility != 'archived' &&
+                              listing.visibility != 'deleted' &&
                               ((widget.title == 'Products' &&
                                       listing.type == 'Products for Rent') ||
                                   (widget.title == 'Services' &&

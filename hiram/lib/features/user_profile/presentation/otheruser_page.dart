@@ -5,6 +5,7 @@ import '../../listing/model/listing_model.dart';
 import '../../listing/widgets/listing_card.dart';
 import '../../inbox/presentation/chat_page.dart';
 import '../../user_profile/service/userprofile_service.dart';
+import 'otheruser_listings_page.dart'; // <-- Add this import
 
 class OtherUserProfilePage extends StatefulWidget {
   final String userId;
@@ -147,19 +148,42 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Top Listings",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Top Listings",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OtherUserListingsPage(
+                            userId: widget.userId,
+                            userName: _userName,
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'VIEW ALL LISTINGS',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               StreamBuilder<QuerySnapshot>(
                 stream: _firestore
                     .collection('listings')
                     .where('userId', isEqualTo: widget.userId)
-                    .snapshots(),
+                    .snapshots(), // <-- remove the .whereNotIn()
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -172,14 +196,22 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                   final listings = snapshot.data!.docs
                       .map((doc) =>
                           Listing.fromMap(doc.data() as Map<String, dynamic>))
+                      .where((listing) =>
+                          listing.visibility != 'archived' &&
+                          listing.visibility !=
+                              'deleted') // <-- manual filter here
                       .take(2) // Only show top 2 listings
                       .toList();
+
+                  if (listings.isEmpty) {
+                    return const Center(child: Text('No listings available.'));
+                  }
 
                   return Column(
                     children: listings
                         .map((listing) => ListingCard(
                               listing: listing,
-                              userName: _userName, // ✅ Pass the userName here
+                              userName: _userName,
                             ))
                         .toList(),
                   );

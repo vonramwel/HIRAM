@@ -73,6 +73,8 @@ class _CategoryListingsPageState extends State<CategoryListingsPage> {
               final listings = snapshot.data!
                   .where((listing) =>
                       listing.userId != currentUserId &&
+                      listing.visibility != 'archived' &&
+                      listing.visibility != 'deleted' &&
                       listing.category == widget.category &&
                       ((widget.type == 'Products' &&
                               listing.type == 'Products for Rent') ||
