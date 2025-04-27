@@ -21,6 +21,7 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
   DateTime? _endDateTime;
   String? _paymentMethod;
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _offeredPriceController = TextEditingController();
   bool _isSubmitting = false;
   final TransactionService _transactionService = TransactionService();
   final DatabaseMethods _databaseMethods = DatabaseMethods();
@@ -148,6 +149,16 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
     }
   }
 
+  double _getFinalTotalPrice() {
+    if (_offeredPriceController.text.isNotEmpty) {
+      double? offered = double.tryParse(_offeredPriceController.text);
+      if (offered != null && offered >= 0) {
+        return offered;
+      }
+    }
+    return _totalPrice;
+  }
+
   Future<void> _submitRequest() async {
     if (!_formKey.currentState!.validate() ||
         _startDateTime == null ||
@@ -176,7 +187,7 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
       notes: _notesController.text,
       status: 'Pending',
       timestamp: Timestamp.now(),
-      totalPrice: _totalPrice,
+      totalPrice: _getFinalTotalPrice(),
     );
 
     await _transactionService.addTransaction(transaction);
@@ -187,6 +198,13 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
     });
 
     Navigator.pop(context);
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    _offeredPriceController.dispose();
+    super.dispose();
   }
 
   @override
@@ -215,8 +233,7 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ImageCarousel(
-                  imageUrls: widget.listing.images), // Using ImageCarousel
+              ImageCarousel(imageUrls: widget.listing.images),
               const SizedBox(height: 10),
               Text('Posted by: $_postedBy',
                   style: const TextStyle(fontStyle: FontStyle.italic)),
@@ -261,14 +278,23 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
                 onChanged: (value) => setState(() => _paymentMethod = value),
               ),
               const SizedBox(height: 10),
+              const SizedBox(height: 10),
               TextFormField(
                 controller: _notesController,
                 decoration: const InputDecoration(labelText: 'Notes'),
                 maxLines: 3,
               ),
               const SizedBox(height: 20),
-              Text('Total Price: ₱${_totalPrice.toStringAsFixed(2)}',
+              Text('Total Price: ₱${_getFinalTotalPrice().toStringAsFixed(2)}',
                   style: const TextStyle(fontWeight: FontWeight.bold)),
+              TextFormField(
+                controller: _offeredPriceController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Offered Price (optional)',
+                  hintText: 'Enter offered price if different',
+                ),
+              ),
               const SizedBox(height: 10),
               if (_transactionId != null)
                 Text("Transaction ID: $_transactionId",
