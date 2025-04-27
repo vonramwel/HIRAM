@@ -14,6 +14,7 @@ class TransactionModel {
   String transactionCode;
   double? transactionRating;
   double totalPrice;
+  double? offeredPrice; // <-- Add this line
 
   bool hasReviewedByRenter;
   bool hasReviewedByLender;
@@ -30,6 +31,7 @@ class TransactionModel {
     required this.status,
     required this.timestamp,
     required this.totalPrice,
+    this.offeredPrice, // <-- Add this line
     this.transactionCode = '',
     this.transactionRating,
     this.hasReviewedByRenter = false,
@@ -42,15 +44,16 @@ class TransactionModel {
       'listingId': listingId,
       'renterId': renterId,
       'ownerId': ownerId,
-      'startDate': Timestamp.fromDate(startDate),
-      'endDate': Timestamp.fromDate(endDate),
+      'startDate': startDate,
+      'endDate': endDate,
       'paymentMethod': paymentMethod,
       'notes': notes,
       'status': status,
       'timestamp': timestamp,
+      'totalPrice': totalPrice,
+      'offeredPrice': offeredPrice, // <-- Save offered price
       'transactionCode': transactionCode,
       'transactionRating': transactionRating,
-      'totalPrice': totalPrice,
       'hasReviewedByRenter': hasReviewedByRenter,
       'hasReviewedByLender': hasReviewedByLender,
     };
@@ -58,19 +61,24 @@ class TransactionModel {
 
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
     return TransactionModel(
-      transactionId: map['transactionId'] as String,
-      listingId: map['listingId'] as String,
-      renterId: map['renterId'] as String,
-      ownerId: map['ownerId'] as String,
+      transactionId: map['transactionId'] ?? '',
+      listingId: map['listingId'] ?? '',
+      renterId: map['renterId'] ?? '',
+      ownerId: map['ownerId'] ?? '',
       startDate: (map['startDate'] as Timestamp).toDate(),
       endDate: (map['endDate'] as Timestamp).toDate(),
-      paymentMethod: map['paymentMethod'] as String,
-      notes: map['notes'] as String,
-      status: map['status'] as String,
-      timestamp: map['timestamp'] as Timestamp,
+      paymentMethod: map['paymentMethod'] ?? '',
+      notes: map['notes'] ?? '',
+      status: map['status'] ?? '',
+      timestamp: map['timestamp'] ?? Timestamp.now(),
+      totalPrice: (map['totalPrice'] ?? 0).toDouble(),
+      offeredPrice: map['offeredPrice'] != null
+          ? (map['offeredPrice']).toDouble()
+          : null, // <-- Load offeredPrice
       transactionCode: map['transactionCode'] ?? '',
-      transactionRating: (map['transactionRating'] as num?)?.toDouble(),
-      totalPrice: (map['totalPrice'] as num).toDouble(),
+      transactionRating: map['transactionRating'] != null
+          ? (map['transactionRating']).toDouble()
+          : null,
       hasReviewedByRenter: map['hasReviewedByRenter'] ?? false,
       hasReviewedByLender: map['hasReviewedByLender'] ?? false,
     );

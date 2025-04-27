@@ -83,4 +83,46 @@ class TransactionService {
       }
     });
   }
+
+  Future<void> updateTransactionStatusAndTotalPrice(
+    String transactionId,
+    String listingId,
+    String renterId,
+    String newStatus,
+    double offeredPrice,
+  ) async {
+    await _firestore
+        .collection('transactions')
+        .where('transactionId', isEqualTo: transactionId)
+        .where('listingId', isEqualTo: listingId)
+        .where('renterId', isEqualTo: renterId)
+        .get()
+        .then((snapshot) {
+      for (var doc in snapshot.docs) {
+        doc.reference.update({
+          'status': newStatus,
+          'totalPrice': offeredPrice,
+        });
+      }
+    });
+  }
+
+  Future<void> updateTransactionStatusOnly(
+    String transactionId,
+    String listingId,
+    String renterId,
+    String newStatus,
+  ) async {
+    await _firestore
+        .collection('transactions')
+        .where('transactionId', isEqualTo: transactionId)
+        .where('listingId', isEqualTo: listingId)
+        .where('renterId', isEqualTo: renterId)
+        .get()
+        .then((snapshot) {
+      for (var doc in snapshot.docs) {
+        doc.reference.update({'status': newStatus});
+      }
+    });
+  }
 }

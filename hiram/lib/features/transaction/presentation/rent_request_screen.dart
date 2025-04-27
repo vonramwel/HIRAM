@@ -187,7 +187,10 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
       notes: _notesController.text,
       status: 'Pending',
       timestamp: Timestamp.now(),
-      totalPrice: _getFinalTotalPrice(),
+      totalPrice: _totalPrice, // keep total price as computed
+      offeredPrice: _offeredPriceController.text.isNotEmpty
+          ? double.tryParse(_offeredPriceController.text)
+          : null,
     );
 
     await _transactionService.addTransaction(transaction);
