@@ -80,6 +80,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _totalExpenses = totalExpenses;
         _topListings = topListingsData
             .map<Listing>((data) => Listing.fromMap(data))
+            .where((listing) =>
+                listing.visibility != 'archived' &&
+                listing.visibility != 'deleted') // <--- FILTER HERE
             .toList();
       });
 

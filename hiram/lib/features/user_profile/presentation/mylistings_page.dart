@@ -1,4 +1,3 @@
-// lib/user/pages/mylistings_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../listing/model/listing_model.dart';
@@ -33,7 +32,7 @@ class _MyListingsPageState extends State<MyListingsPage> {
         }
       }
     }
-    setState(() {}); // Refresh UI after preloading names
+    setState(() {});
   }
 
   @override
@@ -55,10 +54,13 @@ class _MyListingsPageState extends State<MyListingsPage> {
             return const Center(child: Text("You have no listings yet."));
           }
 
-          final listings =
-              snapshot.data!.map((data) => Listing.fromMap(data)).toList();
+          final listings = snapshot.data!
+              .map((data) => Listing.fromMap(data))
+              .where((listing) =>
+                  listing.visibility != 'archived' &&
+                  listing.visibility != 'deleted') // <--- FILTER HERE
+              .toList();
 
-          // Preload usernames
           preloadUserNames(listings);
 
           return ListView.builder(
