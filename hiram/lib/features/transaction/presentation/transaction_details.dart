@@ -11,6 +11,7 @@ import '../../../common_widgets/common_widgets.dart';
 import 'generated_code_dialog.dart';
 import 'input_code_dialog.dart';
 import '../../review/presentation/user_reviews_page.dart';
+import '../../report/presentation/report_transaction.dart';
 
 class TransactionDetails extends StatefulWidget {
   final TransactionModel transaction;
@@ -156,6 +157,15 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     }
   }
 
+  void _showReportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => ReportTransactionDialog(
+        transactionId: widget.transaction.transactionId,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isOwner = _userId == widget.transaction.ownerId;
@@ -175,7 +185,26 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                 !widget.transaction.hasReviewedByLender));
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Transaction Details")),
+      appBar: AppBar(
+        title: const Text("Transaction Details"),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'report') {
+                _showReportDialog();
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                const PopupMenuItem<String>(
+                  value: 'report',
+                  child: Text('Report Transaction'),
+                ),
+              ];
+            },
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

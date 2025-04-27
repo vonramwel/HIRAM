@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../model/listing_model.dart';
 import '../service/listing_service.dart';
 import '../../auth/service/auth.dart'; // Import AuthMethods for user authentication
 import '../presentation/listing_details.dart';
 import '../../listing/widgets/categories.dart';
-import '../widgets/listing_card.dart'; // New import
+import 'listing_card.dart'; // New import
 
 class ListingsSection extends StatefulWidget {
   final String title;
@@ -16,6 +17,27 @@ class ListingsSection extends StatefulWidget {
 
 class _ListingsSectionState extends State<ListingsSection> {
   final ListingService _listingService = ListingService();
+  final Map<String, String> preloadedUserNames = {}; // Cache for user names
+
+  Future<void> preloadUserNames(List<Listing> listings) async {
+    final uniqueUserIds = listings.map((l) => l.userId).toSet();
+
+    for (String userId in uniqueUserIds) {
+      if (!preloadedUserNames.containsKey(userId)) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('User')
+            .doc(userId)
+            .get();
+        if (userDoc.exists) {
+          preloadedUserNames[userId] =
+              userDoc.data()?['name'] ?? 'Unknown User';
+        } else {
+          preloadedUserNames[userId] = 'Unknown User';
+        }
+      }
+    }
+    setState(() {}); // Refresh UI after preloading names
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,10 +84,11 @@ class _ListingsSectionState extends State<ListingsSection> {
                             child: Text('No listings available.'));
                       }
 
-                      // Filter listings: Exclude those posted by the current user
                       final listings = snapshot.data!
                           .where((listing) =>
                               listing.userId != currentUserId &&
+                              listing.visibility != 'archived' &&
+                              listing.visibility != 'deleted' &&
                               ((widget.title == 'Products' &&
                                       listing.type == 'Products for Rent') ||
                                   (widget.title == 'Services' &&
@@ -77,15 +100,23 @@ class _ListingsSectionState extends State<ListingsSection> {
                             child: Text('No listings available.'));
                       }
 
+                      // Start preloading usernames
+                      preloadUserNames(listings);
+
                       return ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: listings.length,
                         itemBuilder: (context, index) {
                           final listing = listings[index];
+                          final userName = preloadedUserNames[listing.userId] ??
+                              'Loading...';
+
                           return Padding(
                             padding: const EdgeInsets.only(right: 10.0),
                             child: ListingCard(
-                                listing: listing), // Use the extracted widget
+                              listing: listing,
+                              userName: userName,
+                            ),
                           );
                         },
                       );

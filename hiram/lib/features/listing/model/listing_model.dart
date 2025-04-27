@@ -14,10 +14,11 @@ class Listing {
 
   // New fields
   String? preferredTransaction;
-
+  String? otherTransaction; // <-- ADD THIS
   String? region;
   String? municipality;
   String? barangay;
+  String? visibility; // <-- New field to track if the listing is archived
 
   Listing({
     required this.id,
@@ -33,9 +34,11 @@ class Listing {
     required this.timestamp,
     required this.images,
     this.preferredTransaction,
+    this.otherTransaction, // <-- ADD THIS
     this.region,
     this.municipality,
     this.barangay,
+    this.visibility, // Default value is false (not archived)
   });
 
   Map<String, dynamic> toJson() => {
@@ -52,9 +55,11 @@ class Listing {
         "timestamp": timestamp.toIso8601String(),
         "images": images,
         "preferredTransaction": preferredTransaction,
+        "otherTransaction": otherTransaction, // <-- ADD THIS
         "region": region,
         "municipality": municipality,
         "barangay": barangay,
+        "visibility": visibility, // <-- Include the new field in the JSON
       };
 
   static Listing fromJson(Map<String, dynamic> json) => Listing(
@@ -71,9 +76,55 @@ class Listing {
         timestamp: DateTime.parse(json["timestamp"]),
         images: List<String>.from(json["images"] ?? []),
         preferredTransaction: json["preferredTransaction"],
+        otherTransaction: json["otherTransaction"], // <-- ADD THIS
         region: json["region"],
         municipality: json["municipality"],
         barangay: json["barangay"],
+        visibility: json["visibility"], // <-- Default to false if not present
       );
+
   static Listing fromMap(Map<String, dynamic> map) => fromJson(map);
+
+  Listing copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? category,
+    String? type,
+    double? rating,
+    int? ratingCount,
+    double? price,
+    String? priceUnit,
+    String? userId,
+    DateTime? timestamp,
+    List<String>? images,
+    String? preferredTransaction,
+    String? otherTransaction, // <-- ADD THIS
+    String? region,
+    String? municipality,
+    String? barangay,
+    String? visibility, // <-- Allow updating the archived status
+  }) {
+    return Listing(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      category: category ?? this.category,
+      type: type ?? this.type,
+      rating: rating ?? this.rating,
+      ratingCount: ratingCount ?? this.ratingCount,
+      price: price ?? this.price,
+      priceUnit: priceUnit ?? this.priceUnit,
+      userId: userId ?? this.userId,
+      timestamp: timestamp ?? this.timestamp,
+      images: images ?? this.images,
+      preferredTransaction: preferredTransaction ?? this.preferredTransaction,
+      otherTransaction:
+          otherTransaction ?? this.otherTransaction, // <-- ADD THIS
+      region: region ?? this.region,
+      municipality: municipality ?? this.municipality,
+      barangay: barangay ?? this.barangay,
+      visibility: visibility ?? this.visibility, // <-- Update archived status
+    );
+  }
 }

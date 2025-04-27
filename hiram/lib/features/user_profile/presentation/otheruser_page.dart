@@ -5,6 +5,8 @@ import '../../listing/model/listing_model.dart';
 import '../../listing/widgets/listing_card.dart';
 import '../../inbox/presentation/chat_page.dart';
 import '../../user_profile/service/userprofile_service.dart';
+import 'otheruser_listings_page.dart';
+import '../../report/presentation/report_user.dart'; // <-- NEW IMPORT
 
 class OtherUserProfilePage extends StatefulWidget {
   final String userId;
@@ -23,7 +25,6 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
   String _address = '';
   String _bio = '';
   String _profileImageUrl = '';
-  List<Listing> _topListings = [];
 
   @override
   void initState() {
@@ -33,14 +34,9 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
 
   Future<void> _loadUserData() async {
     try {
-      // Get user info
       final DocumentSnapshot snapshot =
           await _firestore.collection('User').doc(widget.userId).get();
       final userData = snapshot.data() as Map<String, dynamic>?;
-
-      // Get listings
-      final listings =
-          await userProfileService.getListingsByUserId(widget.userId);
 
       if (userData != null && mounted) {
         setState(() {
@@ -49,45 +45,11 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
           _address = userData['address'] ?? '';
           _bio = userData['bio'] ?? '';
           _profileImageUrl = userData['imgUrl'] ?? '';
-          _topListings = listings
-              .map<Listing>((data) => Listing.fromMap(data))
-              .take(2)
-              .toList();
         });
       }
     } catch (e) {
       print('Error loading user data: $e');
     }
-  }
-
-  Widget _buildStatCard(String title, String value) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(value,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -97,23 +59,36 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
       appBar: AppBar(
         title: const Text('Seller Profile'),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatPage(
-                    receiverId: widget.userId,
-                    receiverName: _userName,
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'contact') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatPage(
+                      receiverId: widget.userId,
+                      receiverName: _userName,
+                    ),
                   ),
-                ),
-              );
+                );
+              } else if (value == 'report') {
+                showDialog(
+                  context: context,
+                  builder: (context) => ReportUserDialog(userId: widget.userId),
+                );
+              }
             },
-            child: const Text(
-              "Contact Seller",
-              style: TextStyle(color: Colors.black),
-            ),
-          )
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'contact',
+                child: Text('Contact Seller'),
+              ),
+              const PopupMenuItem(
+                value: 'report',
+                child: Text('Report User'),
+              ),
+            ],
+          ),
         ],
       ),
       body: SafeArea(
@@ -157,19 +132,74 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Top Listings",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Top Listings",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OtherUserListingsPage(
+                            userId: widget.userId,
+                            userName: _userName,
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'VIEW ALL LISTINGS',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
-              Column(
-                children: _topListings
-                    .map((listing) => ListingCard(listing: listing))
-                    .toList(),
-              )
+              StreamBuilder<QuerySnapshot>(
+                stream: _firestore
+                    .collection('listings')
+                    .where('userId', isEqualTo: widget.userId)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('No listings available.'));
+                  }
+
+                  final listings = snapshot.data!.docs
+                      .map((doc) =>
+                          Listing.fromMap(doc.data() as Map<String, dynamic>))
+                      .where((listing) =>
+                          listing.visibility != 'archived' &&
+                          listing.visibility != 'deleted')
+                      .take(2)
+                      .toList();
+
+                  if (listings.isEmpty) {
+                    return const Center(child: Text('No listings available.'));
+                  }
+
+                  return Column(
+                    children: listings
+                        .map((listing) => ListingCard(
+                              listing: listing,
+                              userName: _userName,
+                            ))
+                        .toList(),
+                  );
+                },
+              ),
             ],
           ),
         ),

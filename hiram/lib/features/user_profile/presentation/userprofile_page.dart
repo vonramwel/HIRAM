@@ -1,11 +1,12 @@
-// lib/user/pages/userprofile_page.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../auth/service/database.dart';
 import '../service/analytics_service.dart';
 import '../../listing/model/listing_model.dart';
 import '../../listing/widgets/listing_card.dart';
 import 'userprofile_details.dart';
 import 'mylistings_page.dart';
+import 'archived_listings_page.dart'; // <--- NEW import
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -25,7 +26,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
   int _completedTransactions = 0;
   int _activeTransactions = 0;
   int _pendingTransactions = 0;
-
   double _totalExpenses = 0.0;
   String _profileImageUrl = '';
   double _rating = 0.0;
@@ -33,6 +33,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   late TextEditingController _bioController;
   List<Listing> _topListings = [];
+  final Map<String, String> preloadedUserNames = {}; // Cache for usernames
 
   @override
   void initState() {
@@ -70,7 +71,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _address = userData['address'] ?? '';
         _bio = userData['bio'] ?? '';
         _bioController.text = _bio;
-
         _profileImageUrl = userData['imgUrl'] ?? '';
         _rating = rating ?? 0.0;
         _completedTransactions = completedTx;
@@ -78,11 +78,37 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _pendingTransactions = pendingTx;
         _totalRevenue = totalRevenue;
         _totalExpenses = totalExpenses;
-
         _topListings = topListingsData
             .map<Listing>((data) => Listing.fromMap(data))
+            .where((listing) =>
+                listing.visibility != 'archived' &&
+                listing.visibility != 'deleted') // <--- FILTER HERE
             .toList();
       });
+
+      await preloadUserNames(_topListings);
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+
+  Future<void> preloadUserNames(List<Listing> listings) async {
+    final uniqueUserIds = listings.map((l) => l.userId).toSet();
+
+    for (String userId in uniqueUserIds) {
+      if (!preloadedUserNames.containsKey(userId)) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('User')
+            .doc(userId)
+            .get();
+        if (userDoc.exists) {
+          preloadedUserNames[userId] =
+              userDoc.data()?['name'] ?? 'Unknown User';
+        } else {
+          preloadedUserNames[userId] = 'Unknown User';
+        }
+      }
     }
   }
 
@@ -217,7 +243,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'Top Listings',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
@@ -247,10 +273,26 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   children: _topListings
                       .map((listing) => Padding(
                             padding: const EdgeInsets.only(right: 8),
-                            child: ListingCard(listing: listing),
+                            child: ListingCard(
+                              listing: listing,
+                              userName: preloadedUserNames[listing.userId] ??
+                                  'Loading...',
+                            ),
                           ))
                       .toList(),
                 ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ArchivedListingsPage(),
+                    ),
+                  );
+                },
+                child: const Text('VIEW ALL ARCHIVED LISTINGS'),
               ),
             ],
           ),
