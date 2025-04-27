@@ -25,6 +25,7 @@ class _ExplorePageState extends State<ExplorePage> {
   String? selectedMunicipality;
   String? selectedBarangay;
   String? sortByPriceOrder; // "asc" or "desc"
+  bool includeOwnListings = false; // NEW: Include own listings toggle
 
   final Map<String, List<String>> categoryOptions = {
     'Products for Rent': [
@@ -199,6 +200,17 @@ class _ExplorePageState extends State<ExplorePage> {
                         });
                       },
                     ),
+                    const SizedBox(height: 16),
+                    CheckboxListTile(
+                      title: const Text('Include My Listings'),
+                      value: includeOwnListings,
+                      onChanged: (value) {
+                        setModalState(() {
+                          includeOwnListings = value ?? false;
+                        });
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () {
@@ -216,6 +228,7 @@ class _ExplorePageState extends State<ExplorePage> {
                           selectedMunicipality = null;
                           selectedBarangay = null;
                           sortByPriceOrder = null;
+                          includeOwnListings = false;
                         });
                       },
                       child: const Text('Clear Filters'),
@@ -304,7 +317,8 @@ class _ExplorePageState extends State<ExplorePage> {
 
                       List<Listing> listings = snapshot.data!
                           .where((listing) =>
-                              listing.userId != currentUserId &&
+                              (includeOwnListings ||
+                                  listing.userId != currentUserId) &&
                               listing.visibility != 'archived' &&
                               listing.visibility != 'deleted')
                           .toList();
