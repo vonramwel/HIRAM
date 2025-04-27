@@ -2,7 +2,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../common_widgets/confirmation_dialog.dart';
-import '../../transaction/service/transaction_service.dart'; // Import TransactionService
 
 class ListingActionService {
   static Future<void> handleAction({
@@ -11,28 +10,45 @@ class ListingActionService {
     required String action,
     required Function(String) onVisibilityUpdated,
   }) async {
-    String title = action == 'archive' ? 'Archive Listing' : 'Delete Listing';
-    String content = action == 'archive'
-        ? 'Are you sure you want to archive this listing?'
-        : 'Are you sure you want to delete this listing?';
+    String title = '';
+    String content = '';
+
+    if (action == 'archive') {
+      title = 'Archive Listing';
+      content = 'Are you sure you want to archive this listing?';
+    } else if (action == 'unarchive') {
+      title = 'Unarchive Listing';
+      content = 'Are you sure you want to unarchive this listing?';
+    } else {
+      title = 'Delete Listing';
+      content = 'Are you sure you want to delete this listing?';
+    }
 
     bool confirmed = await ConfirmationDialog.show(
       context,
       title: title,
       content: content,
-      confirmText: action == 'archive' ? 'Archive' : 'Delete',
+      confirmText: title.split(' ').first,
     );
 
     if (confirmed) {
-      bool canProceed = await _checkTransactionsAndHandle(context, listingId);
-
-      if (canProceed) {
+      if (action == 'unarchive') {
         _updateVisibility(
           context: context,
           listingId: listingId,
-          status: action == 'archive' ? 'archived' : 'deleted',
+          status: 'visible',
           onVisibilityUpdated: onVisibilityUpdated,
         );
+      } else {
+        bool canProceed = await _checkTransactionsAndHandle(context, listingId);
+        if (canProceed) {
+          _updateVisibility(
+            context: context,
+            listingId: listingId,
+            status: action == 'archive' ? 'archived' : 'deleted',
+            onVisibilityUpdated: onVisibilityUpdated,
+          );
+        }
       }
     }
   }
@@ -46,7 +62,6 @@ class ListingActionService {
           .get();
 
       if (transactionSnapshot.docs.isEmpty) {
-        // No transactions tied to the listing
         return true;
       }
 
@@ -64,7 +79,6 @@ class ListingActionService {
       }
 
       if (hasActiveTransaction) {
-        // Block deletion/archive
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -75,7 +89,6 @@ class ListingActionService {
         return false;
       }
 
-      // Cancel all pending transactions
       for (String transactionId in pendingTransactionIds) {
         await FirebaseFirestore.instance
             .collection('transactions')
@@ -107,7 +120,9 @@ class ListingActionService {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Listing ${status == 'archived' ? 'archived' : 'deleted'} successfully',
+            status == 'visible'
+                ? 'Listing unarchived successfully'
+                : 'Listing ${status == 'archived' ? 'archived' : 'deleted'} successfully',
           ),
         ),
       );

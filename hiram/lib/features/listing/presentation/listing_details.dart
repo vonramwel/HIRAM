@@ -9,7 +9,7 @@ import '../../transaction/presentation/rent_request_screen.dart';
 import '../../review/presentation/renter_reviews_page.dart';
 import '../../user_profile/presentation/otheruser_page.dart';
 import 'edit_listing_page.dart';
-import '../widgets/listing_action_service.dart'; // <-- Add this import
+import '../widgets/listing_action_service.dart'; // <-- Already added
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -72,7 +72,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
   void _handleAction(String action) {
     ListingActionService.handleAction(
       context: context,
-      listingId: widget.listing.id,
+      listingId: _currentListing.id,
       action: action,
       onVisibilityUpdated: _updateLocalVisibility,
     );
@@ -88,7 +88,6 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
       builder: (context, snapshot) {
         if (snapshot.hasData && snapshot.data!.exists) {
           final data = snapshot.data!.data() as Map<String, dynamic>;
-
           _currentListing = Listing.fromMap(data);
 
           return Scaffold(
@@ -112,9 +111,15 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                       _handleAction(value);
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'archive',
-                        child: Text('Archive Listing'),
+                      PopupMenuItem(
+                        value: _currentListing.visibility == 'archived'
+                            ? 'unarchive'
+                            : 'archive',
+                        child: Text(
+                          _currentListing.visibility == 'archived'
+                              ? 'Unarchive Listing'
+                              : 'Archive Listing',
+                        ),
                       ),
                       const PopupMenuItem(
                         value: 'delete',
