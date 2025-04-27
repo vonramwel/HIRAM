@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hiram/features/inbox/presentation/inbox_page.dart';
 import '../../user_profile/presentation/userprofile_header.dart';
 import '../../user_profile/presentation/userprofile_page.dart';
-import '../../listing/widgets/categories.dart';
+import '../../explore/presentation/explore_page.dart';
 import '../../listing/widgets/listings_section.dart';
 import '../../listing/presentation/add_listing.dart';
 // import 'explore_page.dart';
@@ -84,7 +84,7 @@ class _NavigationState extends State<Navigation> {
             ));
 
       case 1:
-        return const UserProfile();
+        return ExplorePage();
       case 2:
         return SingleChildScrollView(
             child:

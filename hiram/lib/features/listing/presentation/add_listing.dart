@@ -241,7 +241,7 @@ class _AddListingPageState extends State<AddListingPage> {
                       child: DropdownButtonFormField<String>(
                         decoration: _fieldDecoration('Price Unit'),
                         value: _priceUnit,
-                        items: ['Per Hour', 'Per Day']
+                        items: ['Per Hour', 'Per Day', 'Per Transaction']
                             .map((unit) => DropdownMenuItem(
                                 value: unit, child: Text(unit)))
                             .toList(),

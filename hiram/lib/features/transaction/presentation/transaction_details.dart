@@ -120,15 +120,40 @@ class _TransactionDetailsState extends State<TransactionDetails> {
   }
 
   Future<void> _updateTransactionStatus(String newStatus) async {
-    await _transactionService.updateTransactionStatus(
-      widget.transaction.transactionId,
-      widget.transaction.listingId,
-      widget.transaction.renterId,
-      newStatus,
-    );
-    setState(() {
-      widget.transaction.status = newStatus;
-    });
+    if (newStatus == 'Approved') {
+      if (widget.transaction.offeredPrice != null) {
+        await _transactionService.updateTransactionStatusAndTotalPrice(
+          widget.transaction.transactionId,
+          widget.transaction.listingId,
+          widget.transaction.renterId,
+          newStatus,
+          widget.transaction.offeredPrice!,
+        );
+        setState(() {
+          widget.transaction.totalPrice = widget.transaction.offeredPrice!;
+        });
+      } else {
+        await _transactionService.updateTransactionStatusOnly(
+          widget.transaction.transactionId,
+          widget.transaction.listingId,
+          widget.transaction.renterId,
+          newStatus,
+        );
+      }
+      setState(() {
+        widget.transaction.status = newStatus;
+      });
+    } else {
+      await _transactionService.updateTransactionStatus(
+        widget.transaction.transactionId,
+        widget.transaction.listingId,
+        widget.transaction.renterId,
+        newStatus,
+      );
+      setState(() {
+        widget.transaction.status = newStatus;
+      });
+    }
 
     if (newStatus == 'Completed') {
       _navigateToReviewIfNeeded();
@@ -244,10 +269,15 @@ class _TransactionDetailsState extends State<TransactionDetails> {
               value2: formatDateTime(widget.transaction.endDate),
             ),
             const SizedBox(height: 10),
-            CustomTextField(
-                label: "Total Price",
-                value: widget.transaction.totalPrice.toString()),
-            const SizedBox(height: 10),
+// Update this part:
+            if (widget.transaction.offeredPrice != null) ...[
+              CustomTextField(
+                label: "Offered Price",
+                value: widget.transaction.offeredPrice.toString(),
+              ),
+              const SizedBox(height: 10),
+            ],
+
             CustomTextField(label: "Notes", value: widget.transaction.notes),
             const SizedBox(height: 10),
             CustomTextField(label: "Status", value: widget.transaction.status),
@@ -305,7 +335,6 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                     ),
                   );
 
-                  // Simulate review submission by updating local state
                   setState(() {
                     if (_userId == widget.transaction.renterId) {
                       widget.transaction.hasReviewedByRenter = true;
