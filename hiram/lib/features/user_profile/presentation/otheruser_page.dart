@@ -5,7 +5,8 @@ import '../../listing/model/listing_model.dart';
 import '../../listing/widgets/listing_card.dart';
 import '../../inbox/presentation/chat_page.dart';
 import '../../user_profile/service/userprofile_service.dart';
-import 'otheruser_listings_page.dart'; // <-- Add this import
+import 'otheruser_listings_page.dart';
+import '../../report/presentation/report_user.dart'; // <-- NEW IMPORT
 
 class OtherUserProfilePage extends StatefulWidget {
   final String userId;
@@ -51,36 +52,6 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
     }
   }
 
-  Widget _buildStatCard(String title, String value) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(value,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,23 +59,36 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
       appBar: AppBar(
         title: const Text('Seller Profile'),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatPage(
-                    receiverId: widget.userId,
-                    receiverName: _userName,
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'contact') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatPage(
+                      receiverId: widget.userId,
+                      receiverName: _userName,
+                    ),
                   ),
-                ),
-              );
+                );
+              } else if (value == 'report') {
+                showDialog(
+                  context: context,
+                  builder: (context) => ReportUserDialog(userId: widget.userId),
+                );
+              }
             },
-            child: const Text(
-              "Contact Seller",
-              style: TextStyle(color: Colors.black),
-            ),
-          )
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'contact',
+                child: Text('Contact Seller'),
+              ),
+              const PopupMenuItem(
+                value: 'report',
+                child: Text('Report User'),
+              ),
+            ],
+          ),
         ],
       ),
       body: SafeArea(
@@ -183,7 +167,7 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                 stream: _firestore
                     .collection('listings')
                     .where('userId', isEqualTo: widget.userId)
-                    .snapshots(), // <-- remove the .whereNotIn()
+                    .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -198,9 +182,8 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                           Listing.fromMap(doc.data() as Map<String, dynamic>))
                       .where((listing) =>
                           listing.visibility != 'archived' &&
-                          listing.visibility !=
-                              'deleted') // <-- manual filter here
-                      .take(2) // Only show top 2 listings
+                          listing.visibility != 'deleted')
+                      .take(2)
                       .toList();
 
                   if (listings.isEmpty) {

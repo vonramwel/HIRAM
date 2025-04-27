@@ -1,4 +1,5 @@
 // listing_details.dart
+// Your imports
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -9,7 +10,8 @@ import '../../transaction/presentation/rent_request_screen.dart';
 import '../../review/presentation/renter_reviews_page.dart';
 import '../../user_profile/presentation/otheruser_page.dart';
 import 'edit_listing_page.dart';
-import '../widgets/listing_action_service.dart'; // <-- Already added
+import '../widgets/listing_action_service.dart';
+import '../../report/presentation/report_listing.dart'; // <-- NEW import
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -128,10 +130,9 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     ],
                   ),
                 ] else
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                    child: ElevatedButton(
-                      onPressed: () {
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'viewSeller') {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -140,9 +141,26 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                             ),
                           ),
                         );
-                      },
-                      child: const Text("View Seller"),
-                    ),
+                      } else if (value == 'reportListing') {
+                        showDialog(
+                          context: context,
+                          builder: (_) => ReportListingDialog(
+                            listingId: _currentListing.id,
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.more_vert), // three dots icon
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'viewSeller',
+                        child: Text('View Seller'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'reportListing',
+                        child: Text('Report Listing'),
+                      ),
+                    ],
                   )
               ],
             ),
@@ -263,7 +281,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     '${_currentListing.barangay ?? ''}, ${_currentListing.municipality ?? ''}',
                   ),
                   const SizedBox(height: 20),
-                  if (!_isOwner)
+                  if (!_isOwner) ...[
                     ElevatedButton(
                       onPressed: () {
                         Navigator.push(
@@ -281,6 +299,8 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                       ),
                       child: const Text("Rent"),
                     ),
+                    const SizedBox(height: 10),
+                  ],
                 ],
               ),
             ),
