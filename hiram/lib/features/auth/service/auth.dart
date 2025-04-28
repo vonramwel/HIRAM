@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 import 'database.dart';
 import '../../navigation/presentation/navigation.dart';
+import '../admin/presentation/admin_page.dart'; // Add this import
 
 class AuthMethods {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -20,8 +21,17 @@ class AuthMethods {
       BuildContext context, String email, String password) async {
     try {
       await auth.signInWithEmailAndPassword(email: email, password: password);
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => Navigation()));
+
+      // After sign in, check user type
+      Map<String, dynamic>? userData =
+          await DatabaseMethods().getCurrentUserData();
+      if (userData != null && userData['userType'] == 'admin') {
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (context) => const AdminPage()));
+      } else {
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => Navigation()));
+      }
     } on FirebaseAuthException catch (e) {
       String errorMessage = "";
       if (e.code == 'user-not-found') {
@@ -71,6 +81,7 @@ class AuthMethods {
           "address": "",
           "bio": "",
           "transactionsCompleted": 0,
+          "userType": "user", // <-- Add userType field for Google sign in
         };
 
         bool userExists =
@@ -80,8 +91,16 @@ class AuthMethods {
           await DatabaseMethods().addUser(userDetails.uid, userInfoMap);
         }
 
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => Navigation()));
+        // After sign in, check user type
+        Map<String, dynamic>? userData =
+            await DatabaseMethods().getCurrentUserData();
+        if (userData != null && userData['userType'] == 'admin') {
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (context) => const AdminPage()));
+        } else {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => Navigation()));
+        }
       }
     }
   }
@@ -106,6 +125,7 @@ class AuthMethods {
           "address": "",
           "bio": "",
           "transactionsCompleted": 0,
+          "userType": "user", // <-- Default new registrations as user
         };
 
         await DatabaseMethods().addUser(user.uid, userInfoMap);
