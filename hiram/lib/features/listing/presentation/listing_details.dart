@@ -25,6 +25,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
   String _postedBy = 'Loading...';
   bool _isLoading = true;
   bool _isOwner = false;
+  bool _isAdmin = false; // <-- Added
   final DatabaseMethods _databaseMethods = DatabaseMethods();
   late Listing _currentListing;
 
@@ -33,6 +34,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
     super.initState();
     _currentListing = widget.listing;
     _fetchUserData();
+    _checkIfAdmin(); // <-- Added
   }
 
   Future<void> _fetchUserData() async {
@@ -62,6 +64,24 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
         _postedBy = 'Error loading user';
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _checkIfAdmin() async {
+    // <-- Added
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        Map<String, dynamic>? currentUserData =
+            await _databaseMethods.getUserData(currentUser.uid);
+        if (currentUserData != null && mounted) {
+          setState(() {
+            _isAdmin = currentUserData['userType'] == 'admin';
+          });
+        }
+      }
+    } catch (e) {
+      // Handle error silently
     }
   }
 
@@ -156,10 +176,11 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                         value: 'viewSeller',
                         child: Text('View Seller'),
                       ),
-                      const PopupMenuItem(
-                        value: 'reportListing',
-                        child: Text('Report Listing'),
-                      ),
+                      if (!_isAdmin) // <-- Added condition
+                        const PopupMenuItem(
+                          value: 'reportListing',
+                          child: Text('Report Listing'),
+                        ),
                     ],
                   )
               ],

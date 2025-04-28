@@ -132,6 +132,20 @@ class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
                         'Report Date: $formattedDate',
                         style: const TextStyle(fontSize: 14),
                       ),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OtherUserProfilePage(
+                                userId: widget.reportedById, // <- IMPORTANT
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.person),
+                        label: const Text('View Profile - Reporter'),
+                      ),
                     ],
                   ),
 

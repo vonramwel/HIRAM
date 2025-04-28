@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'reported_user/reported_users_tab.dart';
-import 'reported_listings_tab.dart';
+import 'reported_listings/reported_listings_tab.dart';
 import 'reported_transactions_tab.dart';
 
 class AdminPage extends StatefulWidget {
@@ -43,16 +43,6 @@ class _AdminPageState extends State<AdminPage>
       ),
       body: Column(
         children: [
-          const SizedBox(height: 16),
-          const CircleAvatar(
-            radius: 40,
-            child: Icon(Icons.person, size: 50),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Maria Clara',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
           Expanded(
             child: TabBarView(
               controller: _tabController,
