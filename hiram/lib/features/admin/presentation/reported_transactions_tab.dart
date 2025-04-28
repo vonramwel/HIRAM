@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'reported_user/report_card.dart';
+import 'reported_user/report_user_card.dart';
 
 class ReportedTransactionsTab extends StatelessWidget {
   const ReportedTransactionsTab({Key? key}) : super(key: key);

@@ -3,7 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 import 'database.dart';
 import '../../navigation/presentation/navigation.dart';
-import '../admin/presentation/admin_page.dart'; // Add this import
+import '../../admin/presentation/admin_page.dart'; // Add this import
 
 class AuthMethods {
   final FirebaseAuth auth = FirebaseAuth.instance;
