@@ -34,7 +34,9 @@ class _ReportCardState extends State<ReportCard> {
   Future<String> _getAccountStatus() async {
     final userData =
         await AdminUserService.getUserDataById(widget.reportedUserId);
-    return userData?['accountStatus'] ?? 'unknown';
+    final rawStatus =
+        userData?['accountStatus']?.toString().toLowerCase().trim();
+    return rawStatus == 'locked' ? 'locked' : 'normal';
   }
 
   void _handleAlert() async {
@@ -49,12 +51,17 @@ class _ReportCardState extends State<ReportCard> {
     );
   }
 
-  void _handleFreezeOrUnfreeze(String action) {
-    AdminUserActions.performFreezeOrUnfreezeAction(
+  void _handleFreezeOrUnfreeze(String action) async {
+    await AdminUserActions.performFreezeOrUnfreezeAction(
       userId: widget.reportedUserId,
       context: context,
       action: action,
     );
+
+    // Refresh account status
+    setState(() {
+      accountStatusFuture = _getAccountStatus();
+    });
   }
 
   void _handleBan() {
@@ -66,7 +73,8 @@ class _ReportCardState extends State<ReportCard> {
     return FutureBuilder<String>(
       future: accountStatusFuture,
       builder: (context, snapshot) {
-        final isLocked = snapshot.data == 'locked';
+        final accountStatus = snapshot.data ?? 'normal';
+        final isLocked = accountStatus == 'locked';
         final freezeActionLabel = isLocked ? 'Unfreeze' : 'Freeze';
         final freezeOrUnfreezeAction = isLocked ? 'unfreeze' : 'freeze';
 
@@ -85,14 +93,17 @@ class _ReportCardState extends State<ReportCard> {
             trailing: PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'Alert') _handleAlert();
-                if (value == 'FreezeOrUnfreeze')
+                if (value == 'FreezeOrUnfreeze') {
                   _handleFreezeOrUnfreeze(freezeOrUnfreezeAction);
+                }
                 if (value == 'Ban') _handleBan();
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'Alert', child: Text('Alert')),
                 PopupMenuItem(
-                    value: 'FreezeOrUnfreeze', child: Text(freezeActionLabel)),
+                  value: 'FreezeOrUnfreeze',
+                  child: Text(freezeActionLabel),
+                ),
                 const PopupMenuItem(value: 'Ban', child: Text('Ban')),
               ],
             ),

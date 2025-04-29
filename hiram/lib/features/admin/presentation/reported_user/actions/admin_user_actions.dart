@@ -69,15 +69,21 @@ class AdminUserActions {
     );
   }
 
-  static void performFreezeOrUnfreezeAction({
+  static Future<void> performFreezeOrUnfreezeAction({
     required String userId,
     required BuildContext context,
-    required String action, // 'Freeze' or 'Unfreeze'
-  }) {
-    FreezeActions.performFreezeOrUnfreeze(
+    required String action,
+  }) async {
+    final normalizedAction = action.toLowerCase().trim();
+    if (normalizedAction != 'freeze' && normalizedAction != 'unfreeze') {
+      print('Invalid action: $action');
+      return;
+    }
+
+    await FreezeActions.performFreezeOrUnfreeze(
       userId: userId,
       context: context,
-      action: action,
+      action: normalizedAction,
     );
   }
 

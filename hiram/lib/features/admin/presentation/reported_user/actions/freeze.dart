@@ -5,9 +5,10 @@ class FreezeActions {
   static Future<void> performFreezeOrUnfreeze({
     required String userId,
     required BuildContext context,
-    required String action, // 'Freeze' or 'Unfreeze'
+    required String action, // 'freeze' or 'unfreeze' (lowercase expected)
   }) async {
-    final isFreeze = action == 'Freeze';
+    final normalizedAction = action.toLowerCase().trim();
+    final isFreeze = normalizedAction == 'freeze';
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -65,9 +66,10 @@ class FreezeActions {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(isFreeze
-                ? 'User account has been frozen and listings hidden.'
-                : 'User account has been unfrozen and listings made public.')),
+          content: Text(isFreeze
+              ? 'User account has been frozen and listings hidden.'
+              : 'User account has been unfrozen and listings made public.'),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
