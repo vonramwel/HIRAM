@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../../../user_profile/presentation/otheruser_page.dart';
+import '../../../../user_profile/presentation/otheruser_page.dart';
 
 class ReportedUserDetailPage extends StatefulWidget {
   final String userName;

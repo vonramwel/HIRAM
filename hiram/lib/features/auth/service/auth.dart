@@ -3,7 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 import 'database.dart';
 import '../../navigation/presentation/navigation.dart';
-import '../../admin/presentation/admin_page.dart'; // Add this import
+import '../../admin/presentation/admin_page.dart';
 
 class AuthMethods {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -22,9 +22,15 @@ class AuthMethods {
     try {
       await auth.signInWithEmailAndPassword(email: email, password: password);
 
-      // After sign in, check user type
       Map<String, dynamic>? userData =
           await DatabaseMethods().getCurrentUserData();
+
+      if (userData?['accountStatus'] == 'locked') {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("This account is currently locked."),
+        ));
+      }
+
       if (userData != null && userData['userType'] == 'admin') {
         Navigator.pushReplacement(context,
             MaterialPageRoute(builder: (context) => const AdminPage()));
@@ -44,7 +50,7 @@ class AuthMethods {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.orangeAccent,
-            content: Text(errorMessage, style: TextStyle(fontSize: 18.0)),
+            content: Text(errorMessage, style: const TextStyle(fontSize: 18.0)),
           ),
         );
       }
@@ -81,7 +87,8 @@ class AuthMethods {
           "address": "",
           "bio": "",
           "transactionsCompleted": 0,
-          "userType": "user", // <-- Add userType field for Google sign in
+          "userType": "user",
+          "accountStatus": null,
         };
 
         bool userExists =
@@ -91,9 +98,15 @@ class AuthMethods {
           await DatabaseMethods().addUser(userDetails.uid, userInfoMap);
         }
 
-        // After sign in, check user type
         Map<String, dynamic>? userData =
             await DatabaseMethods().getCurrentUserData();
+
+        if (userData?['accountStatus'] == 'locked') {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("This account is currently locked."),
+          ));
+        }
+
         if (userData != null && userData['userType'] == 'admin') {
           Navigator.pushReplacement(context,
               MaterialPageRoute(builder: (context) => const AdminPage()));
@@ -125,7 +138,8 @@ class AuthMethods {
           "address": "",
           "bio": "",
           "transactionsCompleted": 0,
-          "userType": "user", // <-- Default new registrations as user
+          "userType": "user",
+          "accountStatus": null,
         };
 
         await DatabaseMethods().addUser(user.uid, userInfoMap);
@@ -147,7 +161,7 @@ class AuthMethods {
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         backgroundColor: Colors.orangeAccent,
-        content: Text(message, style: TextStyle(fontSize: 18.0)),
+        content: Text(message, style: const TextStyle(fontSize: 18.0)),
       ));
 
       return false;

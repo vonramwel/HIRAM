@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'reported_user/reported_users_tab.dart';
+import 'reported_user/pages/reported_users_tab.dart';
 import 'reported_listings/reported_listings_tab.dart';
-import 'reported_transactions_tab.dart';
+import 'reported_transactions/reported_transactions_tab.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({Key? key}) : super(key: key);

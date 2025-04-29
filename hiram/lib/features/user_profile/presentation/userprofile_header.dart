@@ -15,6 +15,7 @@ class _UserProfileState extends State<UserProfile> {
 
   String _userName = 'Loading...';
   String _profileImageUrl = '';
+  String? _accountStatus;
 
   int _activeTransactions = 0;
   int _pendingTransactions = 0;
@@ -34,6 +35,7 @@ class _UserProfileState extends State<UserProfile> {
       setState(() {
         _userName = userData['name'] ?? 'Unknown User';
         _profileImageUrl = userData['imgUrl'] ?? '';
+        _accountStatus = userData['accountStatus'] ?? 'active';
       });
     }
   }
@@ -57,7 +59,7 @@ class _UserProfileState extends State<UserProfile> {
   Widget _buildStatCard(String label, String value) {
     return Expanded(
       child: SizedBox(
-        height: 100, // Set a fixed height for consistency
+        height: 100,
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -113,6 +115,30 @@ class _UserProfileState extends State<UserProfile> {
             _userName,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
+          if (_accountStatus == 'locked') ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.red[100],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.lock, color: Colors.red, size: 18),
+                  SizedBox(width: 6),
+                  Text(
+                    'Account Locked',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,

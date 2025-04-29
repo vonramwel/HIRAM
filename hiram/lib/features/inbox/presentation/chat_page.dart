@@ -23,16 +23,29 @@ class _ChatPageState extends State<ChatPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   late final String chatId;
+  String? receiverUserType;
 
   @override
   void initState() {
     super.initState();
     chatId = getChatId(currentUser.uid, widget.receiverId);
+    fetchReceiverUserType();
   }
 
   String getChatId(String user1, String user2) {
     final sortedIds = [user1, user2]..sort();
     return sortedIds.join('_');
+  }
+
+  Future<void> fetchReceiverUserType() async {
+    final doc =
+        await _firestore.collection('User').doc(widget.receiverId).get();
+    final data = doc.data();
+    if (data != null && mounted) {
+      setState(() {
+        receiverUserType = data['userType'];
+      });
+    }
   }
 
   void sendMessage() async {
@@ -45,7 +58,6 @@ class _ChatPageState extends State<ChatPage> {
     };
 
     final chatDoc = _firestore.collection('chats').doc(chatId);
-
     final chatExists = (await chatDoc.get()).exists;
     if (!chatExists) {
       await chatDoc.set({
@@ -125,9 +137,12 @@ class _ChatPageState extends State<ChatPage> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    final senderId = message['senderId'];
-                    final timestamp = message['timestamp'] as Timestamp?;
+                    final messageData = message.data() as Map<String, dynamic>;
+                    final senderId = messageData['senderId'];
+                    final timestamp = messageData['timestamp'] as Timestamp?;
                     final isMe = senderId == currentUser.uid;
+                    final isAlert = messageData.containsKey('isAlert') &&
+                        messageData['isAlert'] == true;
 
                     final messageTime = timestamp?.toDate();
                     final timeString = messageTime != null
@@ -136,7 +151,6 @@ class _ChatPageState extends State<ChatPage> {
 
                     final currentDateLabel =
                         timestamp != null ? formatDateSeparator(timestamp) : '';
-
                     final showDateSeparator = currentDateLabel != lastDateLabel;
                     lastDateLabel = currentDateLabel;
 
@@ -149,8 +163,31 @@ class _ChatPageState extends State<ChatPage> {
                           future: fetchUserData(senderId),
                           builder: (context, userSnapshot) {
                             final userData = userSnapshot.data;
-                            final senderName = userData?['name'] ?? 'Unknown';
+                            final senderIsAdmin =
+                                userData?['userType'] == 'admin';
+                            final senderName = senderIsAdmin
+                                ? 'ADMIN'
+                                : userData?['name'] ?? 'Unknown';
                             final profileImage = userData?['imgUrl'];
+
+                            Color? backgroundColor;
+                            Color textColor = Colors.black87;
+                            BorderRadiusGeometry borderRadius =
+                                BorderRadius.circular(16);
+                            Icon? alertIcon;
+
+                            if (isAlert) {
+                              backgroundColor = Colors.red[400];
+                              textColor = Colors.white;
+                              alertIcon = const Icon(Icons.warning,
+                                  color: Colors.white, size: 16);
+                            } else if (senderIsAdmin && !isMe) {
+                              backgroundColor = Colors.orange[200];
+                            } else {
+                              backgroundColor =
+                                  isMe ? Colors.blueAccent : Colors.grey[200];
+                              textColor = isMe ? Colors.white : Colors.black87;
+                            }
 
                             return Padding(
                               padding: const EdgeInsets.symmetric(
@@ -187,9 +224,7 @@ class _ChatPageState extends State<ChatPage> {
                                         padding: const EdgeInsets.symmetric(
                                             vertical: 10, horizontal: 14),
                                         decoration: BoxDecoration(
-                                          color: isMe
-                                              ? Colors.blueAccent
-                                              : Colors.grey[200],
+                                          color: backgroundColor,
                                           borderRadius: BorderRadius.only(
                                             topLeft: const Radius.circular(16),
                                             topRight: const Radius.circular(16),
@@ -209,21 +244,35 @@ class _ChatPageState extends State<ChatPage> {
                                                     bottom: 4),
                                                 child: Text(
                                                   senderName,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 12,
+                                                    color: textColor,
                                                   ),
                                                 ),
                                               ),
-                                            Text(
-                                              message['text'],
-                                              style: TextStyle(
-                                                color: isMe
-                                                    ? Colors.white
-                                                    : Colors.black87,
-                                                fontSize: 15,
-                                                height: 1.4,
-                                              ),
+                                            Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                if (alertIcon != null)
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            right: 4, top: 2),
+                                                    child: alertIcon,
+                                                  ),
+                                                Expanded(
+                                                  child: Text(
+                                                    messageData['text'],
+                                                    style: TextStyle(
+                                                      color: textColor,
+                                                      fontSize: 15,
+                                                      height: 1.4,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                             const SizedBox(height: 4),
                                             Align(
@@ -231,9 +280,8 @@ class _ChatPageState extends State<ChatPage> {
                                               child: Text(
                                                 timeString,
                                                 style: TextStyle(
-                                                  color: isMe
-                                                      ? Colors.white70
-                                                      : Colors.black54,
+                                                  color: textColor
+                                                      .withOpacity(0.7),
                                                   fontSize: 10,
                                                 ),
                                               ),

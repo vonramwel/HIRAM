@@ -47,6 +47,7 @@ class _ReportedUsersTabState extends State<ReportedUsersTab> {
                   title: userName,
                   subtitle: report['reason'] ?? '',
                   imageUrl: userImageUrl,
+                  reportedUserId: reportedUserId,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -64,9 +65,6 @@ class _ReportedUsersTabState extends State<ReportedUsersTab> {
                       ),
                     );
                   },
-                  onAlert: () {},
-                  onFreeze: () {},
-                  onBan: () {},
                 );
               },
             );
