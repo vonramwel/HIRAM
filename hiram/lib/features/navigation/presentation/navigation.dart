@@ -53,12 +53,21 @@ class _NavigationState extends State<Navigation> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hiram'),
+        backgroundColor: const Color(0xFF2B2B2B), // Dark color
+        elevation: 0,
+        title: const Text(
+          'Hiram',
+          style: TextStyle(
+            color: Colors.white, // Light text on dark background
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
             onPressed: _logout,
+            tooltip: 'Logout',
           ),
         ],
       ),
@@ -70,21 +79,17 @@ class _NavigationState extends State<Navigation> {
             _currentIndex = index;
           });
         },
-        backgroundColor: Colors.black,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.black,
+        backgroundColor: const Color(0xFFFFFFFF),
+        selectedItemColor: const Color(0xFF2B2B2B),
+        unselectedItemColor: const Color(0xFFB3B3B3),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explore'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.home, color: Colors.black), label: 'Home'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.search, color: Colors.black), label: 'Explore'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart, color: Colors.black),
-              label: 'Transactions'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.message, color: Colors.black), label: 'Inbox'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person, color: Colors.black), label: 'Profile'),
+              icon: Icon(Icons.shopping_cart), label: 'Transactions'),
+          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Inbox'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
@@ -97,6 +102,8 @@ class _NavigationState extends State<Navigation> {
             floatingActionButton: isAccountLocked
                 ? null
                 : FloatingActionButton(
+                    backgroundColor: const Color(0xFF2B2B2B),
+                    child: const Icon(Icons.add, color: Color(0xFFFFFFFF)),
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -104,7 +111,6 @@ class _NavigationState extends State<Navigation> {
                             builder: (context) => AddListingPage()),
                       );
                     },
-                    child: const Icon(Icons.add),
                   ),
             body: SingleChildScrollView(
               child: Column(

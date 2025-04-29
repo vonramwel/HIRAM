@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
+const Color pepperBlack = Color(0xFF2E2E2E);
+const Color saltWhite = Color(0xFFF5F5F5);
+const Color midGray = Color(0xFFB0B0B0);
+const Color accentGray = Color(0xFF888888);
+
 class CustomTextField extends StatelessWidget {
   final String label;
   final String value;
@@ -16,18 +21,24 @@ class CustomTextField extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: pepperBlack,
+            ),
           ),
           const SizedBox(height: 5),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.grey[200],
-              border: Border.all(color: Colors.grey),
+              color: saltWhite,
+              border: Border.all(color: midGray),
               borderRadius: BorderRadius.circular(5),
             ),
-            child: Text(value),
+            child: Text(
+              value,
+              style: const TextStyle(color: pepperBlack),
+            ),
           ),
         ],
       ),
@@ -69,7 +80,7 @@ class CustomButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.black,
+        backgroundColor: pepperBlack,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(6),
         ),
@@ -77,8 +88,10 @@ class CustomButton extends StatelessWidget {
       ),
       child: Text(
         label,
-        style:
-            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          color: saltWhite,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -99,8 +112,15 @@ class CustomDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(title),
-      content: Text(message),
+      backgroundColor: saltWhite,
+      title: Text(
+        title,
+        style: const TextStyle(color: pepperBlack, fontWeight: FontWeight.bold),
+      ),
+      content: Text(
+        message,
+        style: const TextStyle(color: pepperBlack),
+      ),
       actions: actions,
     );
   }
@@ -141,10 +161,14 @@ class ImageCarousel extends StatelessWidget {
             height: 180,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: midGray.withOpacity(0.3),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.image, size: 80, color: Colors.grey),
+            child: const Icon(
+              Icons.image,
+              size: 80,
+              color: accentGray,
+            ),
           );
   }
 }

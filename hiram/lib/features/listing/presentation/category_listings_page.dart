@@ -10,7 +10,11 @@ class CategoryListingsPage extends StatefulWidget {
   final String category;
   final String type; // Products or Services
 
-  CategoryListingsPage({required this.category, required this.type});
+  const CategoryListingsPage({
+    required this.category,
+    required this.type,
+    Key? key,
+  }) : super(key: key);
 
   @override
   _CategoryListingsPageState createState() => _CategoryListingsPageState();
@@ -18,7 +22,7 @@ class CategoryListingsPage extends StatefulWidget {
 
 class _CategoryListingsPageState extends State<CategoryListingsPage> {
   final ListingService _listingService = ListingService();
-  final Map<String, String> preloadedUserNames = {}; // Cache for user names
+  final Map<String, String> preloadedUserNames = {};
 
   Future<void> preloadUserNames(List<Listing> listings) async {
     final uniqueUserIds = listings.map((l) => l.userId).toSet();
@@ -43,19 +47,35 @@ class _CategoryListingsPageState extends State<CategoryListingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5), // Salt White
       appBar: AppBar(
-        title: Text(widget.category),
+        title: Text(
+          widget.category,
+          style: const TextStyle(
+            color: Color(0xFFF5F5F5), // Salt White
+            // fontWeight: FontWeight,
+          ),
+        ),
+        backgroundColor: const Color(0xFF2E2E2E), // Pepper Black
+        iconTheme: const IconThemeData(color: Color(0xFFF5F5F5)),
       ),
       body: FutureBuilder<String>(
         future: AuthMethods().getCurrentUserId(),
         builder: (context, userSnapshot) {
           if (userSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2E2E2E)),
+            );
           }
           if (userSnapshot.hasError ||
               !userSnapshot.hasData ||
               userSnapshot.data!.isEmpty) {
-            return const Center(child: Text('Error fetching user data.'));
+            return const Center(
+              child: Text(
+                'Error fetching user data.',
+                style: TextStyle(color: Color(0xFF2E2E2E)), // Pepper Black
+              ),
+            );
           }
 
           final String currentUserId = userSnapshot.data!;
@@ -64,10 +84,17 @@ class _CategoryListingsPageState extends State<CategoryListingsPage> {
             stream: _listingService.getListings(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF2E2E2E)),
+                );
               }
               if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                return Center(
+                  child: Text(
+                    'Error: ${snapshot.error}',
+                    style: const TextStyle(color: Color(0xFF2E2E2E)),
+                  ),
+                );
               }
 
               final listings = snapshot.data!
@@ -83,10 +110,14 @@ class _CategoryListingsPageState extends State<CategoryListingsPage> {
                   .toList();
 
               if (listings.isEmpty) {
-                return const Center(child: Text('No listings found.'));
+                return const Center(
+                  child: Text(
+                    'No listings found.',
+                    style: TextStyle(color: Color(0xFF888888)), // Accent Gray
+                  ),
+                );
               }
 
-              // Start preloading usernames
               preloadUserNames(listings);
 
               return ListView.builder(
@@ -97,7 +128,8 @@ class _CategoryListingsPageState extends State<CategoryListingsPage> {
                       preloadedUserNames[listing.userId] ?? 'Loading...';
 
                   return Padding(
-                    padding: const EdgeInsets.all(8.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0, vertical: 6.0),
                     child: GestureDetector(
                       onTap: () {
                         Navigator.push(
