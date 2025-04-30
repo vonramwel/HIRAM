@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../presentation/category_listings_page.dart'; // Import the new page
+import '../presentation/category_listings_page.dart';
 
 class Categories extends StatefulWidget {
   final String type; // 'Products' or 'Services'
@@ -11,6 +11,7 @@ class Categories extends StatefulWidget {
 }
 
 class _CategoriesState extends State<Categories> {
+  // Full category names used for filtering
   List<Map<String, dynamic>> allCategories = [
     {'name': 'Electronics & Gadgets', 'icon': Icons.electrical_services},
     {'name': 'Vehicles & Transportation', 'icon': Icons.directions_car},
@@ -28,14 +29,31 @@ class _CategoriesState extends State<Categories> {
     {'name': 'Vehicle & Transport Services', 'icon': Icons.local_shipping},
   ];
 
+  // Shortened display names only for UI
+  final Map<String, String> shortCategoryNames = {
+    'Electronics & Gadgets': 'Electronics',
+    'Vehicles & Transportation': 'Vehicles',
+    'Home & Appliances': 'Appliances',
+    'Furniture & Decor': 'Furniture',
+    'Clothing & Accessories': 'Clothing',
+    'Sports & Outdoor Equipment': 'Sports',
+    'Tools & Machinery': 'Tools',
+    'Musical Instruments': 'Instruments',
+    'Books & Learning Materials': 'Books',
+    'Home Services': 'Home',
+    'Event & Party Services': 'Events',
+    'Personal Services': 'Personal',
+    'Professional & Technical Services': 'Professional',
+    'Vehicle & Transport Services': 'Transport',
+  };
+
   @override
   Widget build(BuildContext context) {
-    // Determine which categories to show based on type
     List<Map<String, dynamic>> filteredCategories;
     if (widget.type == 'Products') {
-      filteredCategories = allCategories.sublist(0, 9); // First 9 are products
+      filteredCategories = allCategories.sublist(0, 9);
     } else {
-      filteredCategories = allCategories.sublist(9); // Remaining are services
+      filteredCategories = allCategories.sublist(9);
     }
 
     return SizedBox(
@@ -44,30 +62,32 @@ class _CategoriesState extends State<Categories> {
         scrollDirection: Axis.horizontal,
         itemCount: filteredCategories.length,
         itemBuilder: (context, index) {
+          String fullName = filteredCategories[index]['name'];
+          String displayName = shortCategoryNames[fullName] ?? fullName;
+
           return GestureDetector(
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => CategoryListingsPage(
-                    category: filteredCategories[index]['name'],
+                    category: fullName, // Use full name for backend
                     type: widget.type,
                   ),
                 ),
               );
-              //print(filteredCategories[index]['name']);
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 5.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircleAvatar(
                     radius: 25,
-                    backgroundColor: Colors.black,
+                    backgroundColor: const Color(0xFFD6D6D6),
                     child: Icon(
                       filteredCategories[index]['icon'],
-                      color: Colors.white,
+                      color: const Color(0xFF2B2B2B),
                       size: 24,
                     ),
                   ),
@@ -75,10 +95,13 @@ class _CategoriesState extends State<Categories> {
                   SizedBox(
                     width: 70,
                     child: Text(
-                      filteredCategories[index]['name'],
-                      style: const TextStyle(fontSize: 11.5),
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: Color(0xFF2B2B2B),
+                      ),
                       textAlign: TextAlign.center,
-                      maxLines: 2,
+                      // maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

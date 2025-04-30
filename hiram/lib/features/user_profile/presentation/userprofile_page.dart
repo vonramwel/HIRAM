@@ -6,7 +6,7 @@ import '../../listing/model/listing_model.dart';
 import '../../listing/widgets/listing_card.dart';
 import 'userprofile_details.dart';
 import 'mylistings_page.dart';
-import 'archived_listings_page.dart'; // <--- NEW import
+import 'archived_listings_page.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -23,6 +23,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   String _phone = '';
   String _address = '';
   String _bio = '';
+  String _accountStatus = '';
   int _completedTransactions = 0;
   int _activeTransactions = 0;
   int _pendingTransactions = 0;
@@ -33,7 +34,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   late TextEditingController _bioController;
   List<Listing> _topListings = [];
-  final Map<String, String> preloadedUserNames = {}; // Cache for usernames
+  final Map<String, String> preloadedUserNames = {};
 
   @override
   void initState() {
@@ -70,6 +71,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _phone = userData['contactNumber'] ?? '';
         _address = userData['address'] ?? '';
         _bio = userData['bio'] ?? '';
+        _accountStatus = userData['accountStatus'] ?? '';
         _bioController.text = _bio;
         _profileImageUrl = userData['imgUrl'] ?? '';
         _rating = rating ?? 0.0;
@@ -82,7 +84,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             .map<Listing>((data) => Listing.fromMap(data))
             .where((listing) =>
                 listing.visibility != 'archived' &&
-                listing.visibility != 'deleted') // <--- FILTER HERE
+                listing.visibility != 'deleted')
             .toList();
       });
 
@@ -157,6 +159,32 @@ class _UserProfilePageState extends State<UserProfilePage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              if (_accountStatus == 'locked') ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.lock, color: Colors.red),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Your account is currently locked. Some features may be restricted.',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [

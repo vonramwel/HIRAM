@@ -1,12 +1,13 @@
 // lib/user/pages/otheruser_profile.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // <-- NEW IMPORT
 import '../../listing/model/listing_model.dart';
 import '../../listing/widgets/listing_card.dart';
 import '../../inbox/presentation/chat_page.dart';
 import '../../user_profile/service/userprofile_service.dart';
 import 'otheruser_listings_page.dart';
-import '../../report/presentation/report_user.dart'; // <-- NEW IMPORT
+import '../../report/presentation/report_user.dart'; // <-- ALREADY IMPORTED
 
 class OtherUserProfilePage extends StatefulWidget {
   final String userId;
@@ -19,17 +20,20 @@ class OtherUserProfilePage extends StatefulWidget {
 class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
   final userProfileService = UserProfileService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance; // <-- NEW
 
   String _userName = 'Loading...';
   String _phone = '';
   String _address = '';
   String _bio = '';
   String _profileImageUrl = '';
+  String? _currentUserType; // <-- NEW
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadCurrentUserType(); // <-- NEW
   }
 
   Future<void> _loadUserData() async {
@@ -49,6 +53,24 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
       }
     } catch (e) {
       print('Error loading user data: $e');
+    }
+  }
+
+  Future<void> _loadCurrentUserType() async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        final DocumentSnapshot snapshot =
+            await _firestore.collection('User').doc(currentUser.uid).get();
+        final userData = snapshot.data() as Map<String, dynamic>?;
+        if (userData != null && mounted) {
+          setState(() {
+            _currentUserType = userData['userType'];
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading current user type: $e');
     }
   }
 
@@ -83,10 +105,11 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                 value: 'contact',
                 child: Text('Contact Seller'),
               ),
-              const PopupMenuItem(
-                value: 'report',
-                child: Text('Report User'),
-              ),
+              if (_currentUserType != 'admin') // <-- ONLY show if NOT admin
+                const PopupMenuItem(
+                  value: 'report',
+                  child: Text('Report User'),
+                ),
             ],
           ),
         ],
@@ -107,9 +130,11 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                     : null,
               ),
               const SizedBox(height: 10),
-              Text(_userName,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                _userName,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               if (_phone.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(_phone, style: const TextStyle(color: Colors.black54)),

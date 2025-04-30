@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 import 'database.dart';
 import '../../navigation/presentation/navigation.dart';
+import '../../admin/presentation/admin_page.dart';
 
 class AuthMethods {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -20,8 +21,23 @@ class AuthMethods {
       BuildContext context, String email, String password) async {
     try {
       await auth.signInWithEmailAndPassword(email: email, password: password);
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => Navigation()));
+
+      Map<String, dynamic>? userData =
+          await DatabaseMethods().getCurrentUserData();
+
+      if (userData?['accountStatus'] == 'locked') {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("This account is currently locked."),
+        ));
+      }
+
+      if (userData != null && userData['userType'] == 'admin') {
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (context) => const AdminPage()));
+      } else {
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => Navigation()));
+      }
     } on FirebaseAuthException catch (e) {
       String errorMessage = "";
       if (e.code == 'user-not-found') {
@@ -34,7 +50,7 @@ class AuthMethods {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.orangeAccent,
-            content: Text(errorMessage, style: TextStyle(fontSize: 18.0)),
+            content: Text(errorMessage, style: const TextStyle(fontSize: 18.0)),
           ),
         );
       }
@@ -71,6 +87,8 @@ class AuthMethods {
           "address": "",
           "bio": "",
           "transactionsCompleted": 0,
+          "userType": "user",
+          "accountStatus": null,
         };
 
         bool userExists =
@@ -80,8 +98,22 @@ class AuthMethods {
           await DatabaseMethods().addUser(userDetails.uid, userInfoMap);
         }
 
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => Navigation()));
+        Map<String, dynamic>? userData =
+            await DatabaseMethods().getCurrentUserData();
+
+        if (userData?['accountStatus'] == 'locked') {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("This account is currently locked."),
+          ));
+        }
+
+        if (userData != null && userData['userType'] == 'admin') {
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (context) => const AdminPage()));
+        } else {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => Navigation()));
+        }
       }
     }
   }
@@ -106,6 +138,8 @@ class AuthMethods {
           "address": "",
           "bio": "",
           "transactionsCompleted": 0,
+          "userType": "user",
+          "accountStatus": null,
         };
 
         await DatabaseMethods().addUser(user.uid, userInfoMap);
@@ -127,7 +161,7 @@ class AuthMethods {
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         backgroundColor: Colors.orangeAccent,
-        content: Text(message, style: TextStyle(fontSize: 18.0)),
+        content: Text(message, style: const TextStyle(fontSize: 18.0)),
       ));
 
       return false;

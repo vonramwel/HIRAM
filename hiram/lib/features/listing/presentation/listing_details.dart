@@ -1,8 +1,6 @@
-// listing_details.dart
-// Your imports
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import '../model/listing_model.dart';
 import '../../auth/service/database.dart';
@@ -12,6 +10,7 @@ import '../../user_profile/presentation/otheruser_page.dart';
 import 'edit_listing_page.dart';
 import '../widgets/listing_action_service.dart';
 import '../../report/presentation/report_listing.dart'; // <-- NEW import
+import '../../../common_widgets/common_widgets.dart'; // <-- NEW import
 
 class ListingDetailsPage extends StatefulWidget {
   final Listing listing;
@@ -25,6 +24,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
   String _postedBy = 'Loading...';
   bool _isLoading = true;
   bool _isOwner = false;
+  bool _isAdmin = false;
   final DatabaseMethods _databaseMethods = DatabaseMethods();
   late Listing _currentListing;
 
@@ -33,6 +33,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
     super.initState();
     _currentListing = widget.listing;
     _fetchUserData();
+    _checkIfAdmin();
   }
 
   Future<void> _fetchUserData() async {
@@ -63,6 +64,21 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _checkIfAdmin() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        Map<String, dynamic>? currentUserData =
+            await _databaseMethods.getUserData(currentUser.uid);
+        if (currentUserData != null && mounted) {
+          setState(() {
+            _isAdmin = currentUserData['userType'] == 'admin';
+          });
+        }
+      }
+    } catch (e) {}
   }
 
   void _updateLocalVisibility(String status) {
@@ -109,9 +125,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     },
                   ),
                   PopupMenuButton<String>(
-                    onSelected: (value) {
-                      _handleAction(value);
-                    },
+                    onSelected: (value) => _handleAction(value),
                     itemBuilder: (context) => [
                       PopupMenuItem(
                         value: _currentListing.visibility == 'archived'
@@ -136,30 +150,29 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => OtherUserProfilePage(
-                              userId: _currentListing.userId,
-                            ),
+                            builder: (_) => OtherUserProfilePage(
+                                userId: _currentListing.userId),
                           ),
                         );
                       } else if (value == 'reportListing') {
                         showDialog(
                           context: context,
                           builder: (_) => ReportListingDialog(
-                            listingId: _currentListing.id,
-                          ),
+                              listingId: _currentListing.id),
                         );
                       }
                     },
-                    icon: const Icon(Icons.more_vert), // three dots icon
+                    icon: const Icon(Icons.more_vert),
                     itemBuilder: (context) => [
                       const PopupMenuItem(
                         value: 'viewSeller',
                         child: Text('View Seller'),
                       ),
-                      const PopupMenuItem(
-                        value: 'reportListing',
-                        child: Text('Report Listing'),
-                      ),
+                      if (!_isAdmin)
+                        const PopupMenuItem(
+                          value: 'reportListing',
+                          child: Text('Report Listing'),
+                        ),
                     ],
                   )
               ],
@@ -169,41 +182,7 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _currentListing.images.isNotEmpty
-                      ? CarouselSlider(
-                          options: CarouselOptions(
-                            height: 180,
-                            enlargeCenterPage: true,
-                            enableInfiniteScroll: true,
-                            autoPlay: true,
-                          ),
-                          items: _currentListing.images.map((imageUrl) {
-                            return ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                imageUrl,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Image.asset(
-                                  'assets/images/placeholder.png',
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        )
-                      : Container(
-                          height: 180,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.image,
-                              size: 80, color: Colors.grey),
-                        ),
+                  ImageCarousel(imageUrls: _currentListing.images),
                   const SizedBox(height: 10),
                   Column(
                     children: [
@@ -219,21 +198,17 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                       ),
                       const Text("Rating: 4.95"),
                       const SizedBox(height: 5),
-                      ElevatedButton(
+                      CustomButton(
+                        label: "View Reviews",
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => RenterReviewsPage(
+                              builder: (_) => RenterReviewsPage(
                                   listingId: _currentListing.id),
                             ),
                           );
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black87,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text("View Reviews"),
                       ),
                     ],
                   ),
@@ -241,7 +216,9 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                   Text(
                     _isLoading ? 'Loading user...' : 'Posted by: $_postedBy',
                     style: const TextStyle(
-                        fontSize: 14, fontStyle: FontStyle.italic),
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Align(
@@ -261,43 +238,44 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _buildTwoFields('Type', _currentListing.type, 'Category',
-                      _currentListing.category),
-                  const SizedBox(height: 10),
-                  _buildTwoFields(
-                    'Price',
-                    '₱${_currentListing.price.toStringAsFixed(2)}',
-                    'Price Unit',
-                    _currentListing.priceUnit,
+                  CustomTwoFields(
+                    label1: 'Type',
+                    value1: _currentListing.type,
+                    label2: 'Category',
+                    value2: _currentListing.category,
                   ),
                   const SizedBox(height: 10),
-                  _buildTextField(
-                    'Preferred Means of Transaction',
-                    _currentListing.preferredTransaction ?? 'Not specified',
+                  CustomTwoFields(
+                    label1: 'Price',
+                    value1: '₱${_currentListing.price.toStringAsFixed(2)}',
+                    label2: 'Price Unit',
+                    value2: _currentListing.priceUnit,
                   ),
                   const SizedBox(height: 10),
-                  _buildTextField(
-                    'Location',
-                    '${_currentListing.barangay ?? ''}, ${_currentListing.municipality ?? ''}',
+                  CustomTextField(
+                    label: 'Preferred Means of Transaction',
+                    value:
+                        _currentListing.preferredTransaction ?? 'Not specified',
+                  ),
+                  const SizedBox(height: 10),
+                  CustomTextField(
+                    label: 'Location',
+                    value:
+                        '${_currentListing.barangay ?? ''}, ${_currentListing.municipality ?? ''}',
                   ),
                   const SizedBox(height: 20),
                   if (!_isOwner) ...[
-                    ElevatedButton(
+                    CustomButton(
+                      label: "Rent",
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
+                            builder: (_) =>
                                 RentRequestScreen(listing: _currentListing),
                           ),
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        backgroundColor: Colors.black87,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text("Rent"),
                     ),
                     const SizedBox(height: 10),
                   ],
@@ -315,40 +293,6 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
           );
         }
       },
-    );
-  }
-
-  Widget _buildTextField(String label, String value) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 5),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: Text(value),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTwoFields(
-      String label1, String value1, String label2, String value2) {
-    return Row(
-      children: [
-        Expanded(child: _buildTextField(label1, value1)),
-        const SizedBox(width: 10),
-        Expanded(child: _buildTextField(label2, value2)),
-      ],
     );
   }
 }

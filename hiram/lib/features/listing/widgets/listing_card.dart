@@ -5,7 +5,7 @@ import '../presentation/listing_details.dart';
 
 class ListingCard extends StatefulWidget {
   final Listing listing;
-  final String userName; // <- now passed in
+  final String userName;
 
   const ListingCard({super.key, required this.listing, required this.userName});
 
@@ -27,12 +27,17 @@ class _ListingCardState extends State<ListingCard> {
         }
 
         Listing updatedListing = Listing.fromJson(
-            listingSnapshot.data!.data() as Map<String, dynamic>);
+          listingSnapshot.data!.data() as Map<String, dynamic>,
+        );
 
         String imageUrl =
             updatedListing.images.isNotEmpty ? updatedListing.images.first : '';
-        String location =
-            '${updatedListing.barangay ?? ''}, ${updatedListing.municipality ?? ''}';
+
+        String barangay = updatedListing.barangay?.trim() ?? '';
+        String municipality = updatedListing.municipality?.trim() ?? '';
+        String location = (barangay.isEmpty && municipality.isEmpty)
+            ? 'No location'
+            : '$barangay, $municipality';
 
         return GestureDetector(
           onTap: () {
@@ -48,7 +53,7 @@ class _ListingCardState extends State<ListingCard> {
             width: 250,
             height: 200,
             child: Card(
-              color: const Color.fromARGB(215, 198, 196, 196),
+              color: const Color(0xFFD4D4D4),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
               elevation: 2,
@@ -59,7 +64,7 @@ class _ListingCardState extends State<ListingCard> {
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(16)),
                     child: Container(
-                      color: Colors.grey[200],
+                      color: const Color(0xFFB3B3B3),
                       height: 140,
                       width: double.infinity,
                       child: Stack(
@@ -82,31 +87,18 @@ class _ListingCardState extends State<ListingCard> {
                             child: Row(
                               children: [
                                 const Icon(Icons.location_on,
-                                    size: 14, color: Colors.black54),
+                                    size: 14, color: Color(0xFF2B2B2B)),
                                 const SizedBox(width: 4),
                                 SizedBox(
                                   width: 150,
                                   child: Text(
                                     location,
                                     style: const TextStyle(
-                                        fontSize: 12, color: Colors.black87),
+                                        fontSize: 12, color: Color(0xFF2B2B2B)),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.bookmark_border,
-                                  size: 18, color: Colors.black87),
                             ),
                           ),
                           Positioned(
@@ -116,7 +108,7 @@ class _ListingCardState extends State<ListingCard> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.grey[800],
+                                color: const Color(0xFF2B2B2B),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -126,40 +118,64 @@ class _ListingCardState extends State<ListingCard> {
                               ),
                             ),
                           ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.star,
+                                      size: 14, color: Colors.white),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    (updatedListing.rating != null &&
+                                            updatedListing.ratingCount !=
+                                                null &&
+                                            updatedListing.ratingCount! > 0)
+                                        ? '${updatedListing.rating!.toStringAsFixed(1)} (${updatedListing.ratingCount})'
+                                        : 'No rating',
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 0, 0, 0),
-                    child: Text(
-                      updatedListing.title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 15),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  // Removed side padding here
+                  Text(
+                    ' ${updatedListing.title}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: Color(0xFF2B2B2B),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 0, 0, 0),
-                    child: Text(
-                      updatedListing.description,
-                      style:
-                          const TextStyle(fontSize: 12, color: Colors.black54),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  Text(
+                    '  ${updatedListing.description}',
+                    style:
+                        const TextStyle(fontSize: 12, color: Color(0xFF4D4D4D)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 4.0),
-                      child: Text(
-                        'Posted by: ${widget.userName}',
-                        style: const TextStyle(
-                            fontSize: 10, color: Colors.black54),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    child: Text(
+                      'Posted by: ${widget.userName}   ',
+                      style: const TextStyle(
+                          fontSize: 10, color: Color(0xFF4D4D4D)),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

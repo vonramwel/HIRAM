@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import 'chat_page.dart';
 
 class InboxPage extends StatefulWidget {
@@ -46,7 +45,10 @@ class _InboxPageState extends State<InboxPage> {
 
       if (messagesSnapshot.docs.isEmpty) continue;
 
-      final lastMessage = messagesSnapshot.docs.first.data();
+      final lastMessageDoc = messagesSnapshot.docs.first;
+      final lastMessage = lastMessageDoc.data();
+      final isAlert = lastMessage['isAlert'] == true;
+
       final userIds = chatId.split('_');
       final otherUserId =
           userIds.firstWhere((id) => id != currentUser.uid, orElse: () => '');
@@ -56,13 +58,19 @@ class _InboxPageState extends State<InboxPage> {
       final userData = await fetchUserData(otherUserId);
       if (userData == null) continue;
 
+      final userType = userData['userType'] ?? 'user';
+      final name =
+          userType == 'admin' ? 'ADMIN' : userData['name'] ?? 'Unknown';
+
       conversations.add({
         'chatId': chatId,
         'otherUserId': otherUserId,
-        'name': userData['name'] ?? 'Unknown',
+        'name': name,
         'imgUrl': userData['imgUrl'],
+        'userType': userType,
         'lastMessage': lastMessage['text'] ?? '',
         'timestamp': lastMessage['timestamp'],
+        'isAlert': isAlert,
       });
     }
 
@@ -106,37 +114,66 @@ class _InboxPageState extends State<InboxPage> {
               final name = convo['name'];
               final lastMessage = convo['lastMessage'];
               final time = formatTime(convo['timestamp']);
+              final isAlert = convo['isAlert'] == true;
+              final userType = convo['userType'];
+              final isAdmin = userType == 'admin';
 
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: imgUrl != null && imgUrl.isNotEmpty
-                      ? NetworkImage(imgUrl)
-                      : null,
-                  child: (imgUrl == null || imgUrl.isEmpty)
-                      ? const Icon(Icons.person)
-                      : null,
-                ),
-                title: Text(name),
-                subtitle: Text(
-                  lastMessage,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: Text(
-                  time,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChatPage(
-                        receiverId: convo['otherUserId'],
-                        receiverName: name,
+              return Container(
+                color: isAdmin ? Colors.blue.shade50 : null,
+                child: ListTile(
+                  leading: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        backgroundImage: imgUrl != null && imgUrl.isNotEmpty
+                            ? NetworkImage(imgUrl)
+                            : null,
+                        child: (imgUrl == null || imgUrl.isEmpty)
+                            ? const Icon(Icons.person)
+                            : null,
                       ),
+                      if (isAdmin)
+                        const Icon(
+                          Icons.verified_user,
+                          color: Colors.blue,
+                          size: 16,
+                        ),
+                    ],
+                  ),
+                  title: Text(
+                    name,
+                    style: TextStyle(
+                      fontWeight: isAdmin ? FontWeight.bold : FontWeight.normal,
+                      color: isAdmin ? Colors.blue.shade900 : null,
                     ),
-                  );
-                },
+                  ),
+                  subtitle: Text(
+                    isAlert ? '[ALERT] $lastMessage' : lastMessage,
+                    style: TextStyle(
+                      fontWeight: isAlert ? FontWeight.bold : FontWeight.normal,
+                      color: isAlert
+                          ? Colors.red
+                          : (isAdmin ? Colors.black87 : Colors.black),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Text(
+                    time,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatPage(
+                          receiverId: convo['otherUserId'],
+                          receiverName: name,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               );
             },
           );

@@ -15,6 +15,7 @@ class _UserProfileState extends State<UserProfile> {
 
   String _userName = 'Loading...';
   String _profileImageUrl = '';
+  String? _accountStatus;
 
   int _activeTransactions = 0;
   int _pendingTransactions = 0;
@@ -34,6 +35,7 @@ class _UserProfileState extends State<UserProfile> {
       setState(() {
         _userName = userData['name'] ?? 'Unknown User';
         _profileImageUrl = userData['imgUrl'] ?? '';
+        _accountStatus = userData['accountStatus'] ?? 'active';
       });
     }
   }
@@ -57,11 +59,11 @@ class _UserProfileState extends State<UserProfile> {
   Widget _buildStatCard(String label, String value) {
     return Expanded(
       child: SizedBox(
-        height: 100, // Set a fixed height for consistency
+        height: 100,
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: const Color(0xFF2B2B2B), // dark gray background
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -71,7 +73,7 @@ class _UserProfileState extends State<UserProfile> {
                 label,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFFD4D4D4), // light gray text
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -80,7 +82,7 @@ class _UserProfileState extends State<UserProfile> {
               Text(
                 value,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFFFFFFFF), // white for values
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -100,19 +102,47 @@ class _UserProfileState extends State<UserProfile> {
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundColor: Colors.grey,
+            backgroundColor: const Color(0xFFB3B3B3), // medium gray
             backgroundImage: _profileImageUrl.isNotEmpty
                 ? NetworkImage(_profileImageUrl)
                 : null,
             child: _profileImageUrl.isEmpty
-                ? const Icon(Icons.person, size: 40, color: Colors.white)
+                ? const Icon(Icons.person, size: 40, color: Color(0xFFFFFFFF))
                 : null,
           ),
           const SizedBox(height: 10),
           Text(
             _userName,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2B2B2B), // dark gray text
+            ),
           ),
+          if (_accountStatus == 'locked') ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Color(0xFFFFE5E5), // soft red background
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.lock, color: Colors.red, size: 18),
+                  SizedBox(width: 6),
+                  Text(
+                    'Account Locked',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
