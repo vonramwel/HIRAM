@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'freeze.dart';
+import 'ban.dart';
 
 class AdminUserActions {
   static void showAlertDialog({
@@ -87,8 +88,11 @@ class AdminUserActions {
     );
   }
 
-  static void performBanAction() {
-    print('Ban action executed');
+  static void performBanAction({
+    required String userId,
+    required BuildContext context,
+  }) {
+    BanActions.performBan(userId: userId, context: context);
   }
 
   static String _getChatId(String user1, String user2) {

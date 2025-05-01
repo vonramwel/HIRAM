@@ -20,9 +20,13 @@ class TransactionCard extends StatefulWidget {
 }
 
 class _TransactionCardState extends State<TransactionCard> {
-  String userName = 'Loading...';
+  String otherUserName = 'Loading...';
   String userLabel = 'User';
-  bool isUserLocked = false;
+  bool isOtherUserLocked = false;
+
+  bool isOwnerLocked = false;
+  bool isRenterLocked = false;
+  bool isOtherUserBanned = false;
 
   final DatabaseMethods _databaseMethods = DatabaseMethods();
   final AuthMethods _authMethods = AuthMethods();
@@ -31,23 +35,36 @@ class _TransactionCardState extends State<TransactionCard> {
     return DateFormat('MM-dd-yyyy hh:mm a').format(dateTime.toLocal());
   }
 
-  Future<void> _fetchUserInfo(String userId) async {
+  Future<void> _fetchBanStatus(String ownerId, String renterId) async {
     try {
-      Map<String, dynamic>? userData =
-          await _databaseMethods.getUserData(userId);
-      if (mounted) {
-        setState(() {
-          userName = userData?['name'] ?? 'Unknown User';
-          isUserLocked = (userData?['accountStatus'] ?? '') == 'locked';
-        });
-      }
+      final ownerData = await _databaseMethods.getUserData(ownerId);
+      final renterData = await _databaseMethods.getUserData(renterId);
+
+      final ownerStatus = ownerData?['accountStatus'] ?? '';
+      final renterStatus = renterData?['accountStatus'] ?? '';
+
+      setState(() {
+        isOwnerLocked = ownerStatus == 'locked';
+        isRenterLocked = renterStatus == 'locked';
+      });
+
+      final currentUserId = await _authMethods.getCurrentUserId();
+      final isCurrentUserOwner = currentUserId == ownerId;
+      final otherUserData = isCurrentUserOwner ? renterData : ownerData;
+      final otherUserStatus = otherUserData?['accountStatus'] ?? '';
+
+      setState(() {
+        otherUserName = otherUserData?['name'] ?? 'Unknown User';
+        userLabel = isCurrentUserOwner ? 'Renter' : 'Owner';
+        isOtherUserLocked = otherUserStatus == 'locked';
+        isOtherUserBanned = otherUserStatus == 'banned';
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          userName = 'Error loading user';
-          isUserLocked = false;
-        });
-      }
+      setState(() {
+        otherUserName = 'Error loading user';
+        isOtherUserLocked = false;
+        isOtherUserBanned = false;
+      });
     }
   }
 
@@ -74,24 +91,19 @@ class _TransactionCardState extends State<TransactionCard> {
         }
 
         final listingData = snapshot.data!.data() as Map<String, dynamic>;
-        final List<dynamic>? images = listingData['images'] as List<dynamic>?;
-        final String imageUrl =
+        final images = listingData['images'] as List<dynamic>?;
+        final imageUrl =
             (images != null && images.isNotEmpty) ? images[0] as String : '';
-        final String listingTitle = listingData['title'] ?? 'Listing Title';
-        final String ownerId = listingData['userId'] ?? '';
-        final String renterId = widget.transaction.renterId;
+        final listingTitle = listingData['title'] ?? 'Listing Title';
+        final ownerId = listingData['userId'] ?? '';
+        final renterId = widget.transaction.renterId;
 
-        if (userName == 'Loading...' &&
-            (ownerId.isNotEmpty || renterId.isNotEmpty)) {
-          _authMethods.getCurrentUserId().then((currentUserId) {
-            final String userToFetch =
-                currentUserId == ownerId ? renterId : ownerId;
-            setState(() {
-              userLabel = currentUserId == ownerId ? 'Renter' : 'Owner';
-            });
-            _fetchUserInfo(userToFetch);
-          });
+        if (otherUserName == 'Loading...' &&
+            (ownerId.isNotEmpty && renterId.isNotEmpty)) {
+          _fetchBanStatus(ownerId, renterId);
         }
+
+        final isFlagged = isOwnerLocked || isRenterLocked;
 
         return GestureDetector(
           onTap: widget.onTap,
@@ -99,7 +111,7 @@ class _TransactionCardState extends State<TransactionCard> {
             margin: const EdgeInsets.symmetric(vertical: 8),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isUserLocked ? Colors.red[50] : Colors.white,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -124,19 +136,44 @@ class _TransactionCardState extends State<TransactionCard> {
                 ),
                 const SizedBox(height: 4),
 
-                // Username
+                // Username + Ban Status
                 Row(
                   children: [
                     const Icon(Icons.person, size: 14, color: Colors.grey),
                     const SizedBox(width: 4),
                     Text(
-                      '$userLabel: $userName',
+                      '$userLabel: $otherUserName',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: isUserLocked ? Colors.red : Colors.grey[700],
+                        color: isOtherUserLocked || isOtherUserBanned
+                            ? Colors.red
+                            : Colors.grey[700],
                       ),
                     ),
+                    if (isOtherUserBanned) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.warning, color: Colors.red, size: 16),
+                      const Text(
+                        'BANNED',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ] else if (isOtherUserLocked) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.lock, color: Colors.orange, size: 16),
+                      const Text(
+                        'LOCKED',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
 
@@ -193,8 +230,6 @@ class _TransactionCardState extends State<TransactionCard> {
                           // Price
                           Row(
                             children: [
-                              const Icon(Icons.monetization_on,
-                                  size: 16, color: Colors.green),
                               const SizedBox(width: 4),
                               Text(
                                 'PHP ${widget.transaction.totalPrice.toStringAsFixed(0)}',

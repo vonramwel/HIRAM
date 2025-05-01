@@ -71,7 +71,8 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           await _databaseMethods.getUserData(otherUserId);
       setState(() {
         _otherUserName = userData?['name'] ?? 'Unknown User';
-        _isOtherUserLocked = userData?['accountStatus'] == 'locked';
+        String? status = userData?['accountStatus'];
+        _isOtherUserLocked = status == 'locked' || status == 'banned';
       });
     } catch (e) {
       setState(() {
@@ -245,12 +246,15 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             if (_isOtherUserLocked) ...[
               const SizedBox(height: 6),
               Row(
-                children: const [
-                  Icon(Icons.lock, size: 16, color: Colors.red),
-                  SizedBox(width: 4),
+                children: [
+                  const Icon(Icons.warning, size: 16, color: Colors.red),
+                  const SizedBox(width: 4),
                   Text(
-                    "This account is locked",
-                    style: TextStyle(
+                    // Show different messages for banned vs locked
+                    _isOtherUserLocked && _otherUserName.contains('banned')
+                        ? "This account is banned"
+                        : "This account is locked",
+                    style: const TextStyle(
                       fontSize: 13,
                       color: Colors.red,
                       fontWeight: FontWeight.w500,

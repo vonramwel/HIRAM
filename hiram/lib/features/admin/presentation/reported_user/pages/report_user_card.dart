@@ -65,7 +65,10 @@ class _ReportCardState extends State<ReportCard> {
   }
 
   void _handleBan() {
-    AdminUserActions.performBanAction();
+    AdminUserActions.performBanAction(
+      userId: widget.reportedUserId,
+      context: context,
+    );
   }
 
   @override
