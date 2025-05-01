@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../model/listing_model.dart';
 import '../service/listing_service.dart';
 import '../../auth/service/auth.dart'; // Import AuthMethods for user authentication
-import '../presentation/listing_details.dart';
 import '../../listing/widgets/categories.dart';
 import 'listing_card.dart'; // New import
 
@@ -89,6 +88,7 @@ class _ListingsSectionState extends State<ListingsSection> {
                               listing.userId != currentUserId &&
                               listing.visibility != 'archived' &&
                               listing.visibility != 'deleted' &&
+                              listing.visibility != 'hidden' &&
                               ((widget.title == 'Products' &&
                                       listing.type == 'Products for Rent') ||
                                   (widget.title == 'Services' &&

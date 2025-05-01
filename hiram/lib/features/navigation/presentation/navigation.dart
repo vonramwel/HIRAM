@@ -87,7 +87,7 @@ class _NavigationState extends State<Navigation> {
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explore'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart), label: 'Transactions'),
+              icon: Icon(Icons.receipt_long), label: 'Transactions'),
           BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Inbox'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
@@ -132,7 +132,7 @@ class _NavigationState extends State<Navigation> {
             child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserProfile(),
+            // UserProfile(),
             TransactionsSection(),
           ],
         ));

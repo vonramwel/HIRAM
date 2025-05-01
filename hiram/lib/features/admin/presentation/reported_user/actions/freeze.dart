@@ -49,19 +49,18 @@ class FreezeActions {
 
       for (final doc in listings.docs) {
         final data = doc.data();
-        final hasVisibility = data.containsKey('visibility');
+        final visibility = data['visibility'] as String?;
 
         if (isFreeze) {
-          if (!hasVisibility || data['visibility'] == 'public') {
+          if (visibility == null || visibility == 'public') {
             batch.update(doc.reference, {'visibility': 'hidden'});
           }
         } else {
-          if (data['visibility'] == 'hidden') {
+          if (visibility == 'hidden') {
             batch.update(doc.reference, {'visibility': 'public'});
           }
         }
       }
-
       await batch.commit();
 
       ScaffoldMessenger.of(context).showSnackBar(

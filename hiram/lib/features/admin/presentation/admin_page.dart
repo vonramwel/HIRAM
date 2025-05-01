@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'reported_user/pages/reported_users_tab.dart';
 import 'reported_listings/reported_listings_tab.dart';
 import 'reported_transactions/reported_transactions_tab.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../auth/presentation/login_page.dart'; // Import your login screen
 
 class AdminPage extends StatefulWidget {
   const AdminPage({Key? key}) : super(key: key);
@@ -26,10 +28,27 @@ class _AdminPageState extends State<AdminPage>
     super.dispose();
   }
 
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+            tooltip: 'Logout',
+          ),
+        ],
         title: const Text('ADMIN'),
         bottom: TabBar(
           controller: _tabController,

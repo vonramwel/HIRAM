@@ -92,7 +92,6 @@ class _InboxPageState extends State<InboxPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Inbox')),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: fetchConversations(),
         builder: (context, snapshot) {
