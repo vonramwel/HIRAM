@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'reported_listings_service.dart';
-import '../../../listing/model/listing_model.dart';
-import '../../../listing/presentation/listing_details.dart';
-import '../../../user_profile/presentation/otheruser_page.dart';
+import '../../../../listing/model/listing_model.dart';
+import '../../../../listing/presentation/listing_details.dart';
+import '../../../../user_profile/presentation/otheruser_page.dart';
 
 class ReportedListingsDetails extends StatefulWidget {
   final Map<String, dynamic> reportData;

@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../listing/model/listing_model.dart';
+import '../../../../listing/model/listing_model.dart';
 
 class ReportedListingsService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -36,6 +36,7 @@ class ReportedListingsService {
     return {
       'listing': listing,
       'ownerName': ownerName,
+      'ownerId': listing?.userId, // Add this line
     };
   }
 

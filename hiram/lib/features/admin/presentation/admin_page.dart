@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'reported_user/pages/reported_users_tab.dart';
-import 'reported_listings/reported_listings_tab.dart';
+import 'reported_listings/pages/reported_listings_tab.dart';
 import 'reported_transactions/reported_transactions_tab.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth/presentation/login_page.dart'; // Import your login screen
