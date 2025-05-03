@@ -98,12 +98,13 @@ class _TransactionCardState extends State<TransactionCard> {
         final ownerId = listingData['userId'] ?? '';
         final renterId = widget.transaction.renterId;
 
+        final isDeleted = listingData['visibility'] == "deleted";
+        final isHidden = listingData['visibility'] == "hidden";
+
         if (otherUserName == 'Loading...' &&
             (ownerId.isNotEmpty && renterId.isNotEmpty)) {
           _fetchBanStatus(ownerId, renterId);
         }
-
-        final isFlagged = isOwnerLocked || isRenterLocked;
 
         return GestureDetector(
           onTap: widget.onTap,
@@ -124,15 +125,25 @@ class _TransactionCardState extends State<TransactionCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Listing Title
-                Text(
-                  listingTitle,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                // Listing Title + Indicator
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        listingTitle,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isDeleted)
+                      _buildTag('DELETED', Colors.red)
+                    else if (isHidden)
+                      _buildTag('HIDDEN', Colors.orange),
+                  ],
                 ),
                 const SizedBox(height: 4),
 
@@ -267,6 +278,26 @@ class _TransactionCardState extends State<TransactionCard> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildTag(String label, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
