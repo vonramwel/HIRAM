@@ -80,4 +80,38 @@ class AlertListing {
     final sortedIds = [user1, user2]..sort();
     return sortedIds.join('_');
   }
+
+  static Future<void> sendAlertDirectly({
+    required String receiverId,
+    required Listing listing,
+    required String reason,
+    bool isDeleted = false,
+  }) async {
+    final currentUser = FirebaseAuth.instance.currentUser!;
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    final senderId = currentUser.uid;
+    final chatId = _getChatId(senderId, receiverId);
+
+    final chatDoc = firestore.collection('chats').doc(chatId);
+    final chatExists = (await chatDoc.get()).exists;
+
+    if (!chatExists) {
+      await chatDoc.set({
+        'participants': [senderId, receiverId]
+      });
+    }
+
+    final action = isDeleted ? 'deleted' : 'hidden';
+    final messageText =
+        'Your listing titled "${listing.title}" was reported for the following reason: "$reason". The listing has been $action by the Admin.';
+
+    final message = {
+      'senderId': senderId,
+      'text': messageText,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isAlert': true,
+    };
+
+    await chatDoc.collection('messages').add(message);
+  }
 }

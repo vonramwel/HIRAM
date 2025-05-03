@@ -114,17 +114,36 @@ class _ReportedListingsCardState extends State<ReportedListingsCard> {
                   );
                 }
                 break;
-              case 'Hide':
-                AdminListingActions.hideListing(context, widget.listingId);
+              case 'ToggleHide':
+                if (_listing != null && _ownerId != null) {
+                  AdminListingActions.toggleHideListing(
+                    context: context,
+                    listing: _listing!,
+                    listingId: widget.listingId,
+                    ownerId: _ownerId!,
+                    reason: widget.reason,
+                  );
+                }
                 break;
               case 'Delete':
-                AdminListingActions.deleteListing(context, widget.listingId);
+                if (_listing != null && _ownerId != null) {
+                  AdminListingActions.deleteListing(
+                    context: context,
+                    listing: _listing!,
+                    listingId: widget.listingId,
+                    ownerId: _ownerId!,
+                    reason: widget.reason,
+                  );
+                }
                 break;
             }
           },
           itemBuilder: (BuildContext context) => [
             const PopupMenuItem(value: 'Alert', child: Text('Alert')),
-            const PopupMenuItem(value: 'Hide', child: Text('Hide')),
+            PopupMenuItem(
+              value: 'ToggleHide',
+              child: Text(_listing!.visibility == 'hidden' ? 'Unhide' : 'Hide'),
+            ),
             const PopupMenuItem(value: 'Delete', child: Text('Delete')),
           ],
         ),

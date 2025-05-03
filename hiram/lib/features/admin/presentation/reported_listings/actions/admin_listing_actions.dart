@@ -1,7 +1,8 @@
-// lib/reported_listing/admin_listing_actions.dart
 import 'package:flutter/material.dart';
 import '../../../../listing/model/listing_model.dart';
 import 'alert_listing.dart';
+import 'hide_listing.dart';
+import 'delete_listing.dart';
 
 class AdminListingActions {
   static void showAlert({
@@ -18,13 +19,30 @@ class AdminListingActions {
     );
   }
 
-  static void hideListing(BuildContext context, String listingId) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Listing $listingId is now hidden.')),
+  static void toggleHideListing({
+    required BuildContext context,
+    required Listing listing,
+    required String listingId,
+    required String ownerId,
+    required String reason,
+  }) {
+    final handler = HideListingHandler();
+    handler.toggleListingVisibility(
+      context: context,
+      listing: listing,
+      listingId: listingId,
+      ownerId: ownerId,
+      reason: reason,
     );
   }
 
-  static void deleteListing(BuildContext context, String listingId) {
+  static void deleteListing({
+    required BuildContext context,
+    required Listing listing,
+    required String listingId,
+    required String ownerId,
+    required String reason,
+  }) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -36,11 +54,15 @@ class AdminListingActions {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              // Placeholder for delete logic
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Listing $listingId deleted.')),
+              final handler = DeleteListingHandler();
+              await handler.deleteListing(
+                context: context,
+                listing: listing,
+                listingId: listingId,
+                ownerId: ownerId,
+                reason: reason,
               );
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
