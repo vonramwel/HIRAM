@@ -4,6 +4,7 @@ import 'reported_listings/pages/reported_listings_tab.dart';
 import 'reported_transactions/reported_transactions_tab.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth/presentation/login_page.dart'; // Import your login screen
+import '../../inbox/presentation/inbox_page.dart'; // Import your inbox screen
 
 class AdminPage extends StatefulWidget {
   const AdminPage({Key? key}) : super(key: key);
@@ -69,7 +70,7 @@ class _AdminPageState extends State<AdminPage>
                 const ReportedUsersTab(),
                 const ReportedListingsTab(),
                 const ReportedTransactionsTab(),
-                const Center(child: Text('No Messages')),
+                const InboxPage()
               ],
             ),
           ),
