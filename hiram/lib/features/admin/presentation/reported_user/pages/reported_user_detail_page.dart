@@ -1,14 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../../user_profile/presentation/otheruser_page.dart';
+import '../actions/admin_user_actions.dart';
+import 'reported_user_service.dart';
 
 class ReportedUserDetailPage extends StatefulWidget {
   final String userName;
   final String userImageUrl;
   final String reportReason;
   final Map<String, dynamic> userData;
-  final String reportedById; // <-- add this
-  final Timestamp? reportTimestamp; // <-- add this
+  final String reportedById;
+  final Timestamp? reportTimestamp;
 
   const ReportedUserDetailPage({
     Key? key,
@@ -27,11 +29,13 @@ class ReportedUserDetailPage extends StatefulWidget {
 class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
   String? reporterName;
   bool isLoading = true;
+  String accountStatus = 'normal';
 
   @override
   void initState() {
     super.initState();
     fetchReporterName();
+    fetchAccountStatus();
   }
 
   Future<void> fetchReporterName() async {
@@ -60,9 +64,49 @@ class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
     }
   }
 
+  Future<void> fetchAccountStatus() async {
+    final userData =
+        await AdminUserService.getUserDataById(widget.userData['id']);
+    final rawStatus =
+        userData?['accountStatus']?.toString().toLowerCase().trim();
+    setState(() {
+      accountStatus = rawStatus == 'locked' ? 'locked' : 'normal';
+    });
+  }
+
+  void _handleAlert() async {
+    final userData =
+        await AdminUserService.getUserDataById(widget.userData['id']);
+    final reportedUserName = userData?['name'] ?? 'Unknown';
+
+    AdminUserActions.showAlertDialog(
+      context: context,
+      receiverId: widget.userData['id'],
+      receiverName: reportedUserName,
+    );
+  }
+
+  void _handleFreezeOrUnfreeze() async {
+    final action = accountStatus == 'locked' ? 'unfreeze' : 'freeze';
+
+    await AdminUserActions.performFreezeOrUnfreezeAction(
+      userId: widget.userData['id'],
+      context: context,
+      action: action,
+    );
+
+    await fetchAccountStatus();
+  }
+
+  void _handleBan() {
+    AdminUserActions.performBanAction(
+      userId: widget.userData['id'],
+      context: context,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Prepare grouped fields
     String contactInfo = '';
     if (widget.userData['phoneNumber'] != null) {
       contactInfo += 'Phone: ${widget.userData['phoneNumber']}';
@@ -83,6 +127,9 @@ class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
             .toString()
         : 'Unknown Date';
 
+    final isLocked = accountStatus == 'locked';
+    final freezeLabel = isLocked ? 'Unfreeze' : 'Freeze';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reported User Details'),
@@ -91,7 +138,6 @@ class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Profile Picture
             CircleAvatar(
               radius: 50,
               backgroundImage: widget.userImageUrl.isNotEmpty
@@ -102,56 +148,33 @@ class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
                   : null,
             ),
             const SizedBox(height: 16),
-
-            // User Name
             Text(
               widget.userName,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-
-            // Report Reason
             Text(
               'Report Reason: ${widget.reportReason}',
               style: const TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
 
-            // Reporter Details
-            const SizedBox(height: 20),
-            isLoading
-                ? const CircularProgressIndicator()
-                : Column(
-                    children: [
-                      Text(
-                        'Reported By: $reporterName',
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Report Date: $formattedDate',
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OtherUserProfilePage(
-                                userId: widget.reportedById, // <- IMPORTANT
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.person),
-                        label: const Text('View Profile - Reporter'),
-                      ),
-                    ],
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OtherUserProfilePage(
+                      userId: widget.userData['id'],
+                    ),
                   ),
+                );
+              },
+              icon: const Icon(Icons.person),
+              label: const Text('View Profile'),
+            ),
+            // const SizedBox(height: 20),
 
-            const Divider(height: 40),
-
-            // User Details
             Expanded(
               child: ListView(
                 children: [
@@ -175,48 +198,58 @@ class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
                 ],
               ),
             ),
-
-            // Action Buttons
+            const Divider(height: 40),
+            isLoading
+                ? const CircularProgressIndicator()
+                : Column(
+                    children: [
+                      Text(
+                        'Reported By: $reporterName',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Report Date: $formattedDate',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OtherUserProfilePage(
+                                userId: widget.reportedById,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.person),
+                        label: const Text('View Profile - Reporter'),
+                      ),
+                    ],
+                  ),
+            const SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: () {
-                    // TODO: Implement alert functionality
-                  },
+                  onPressed: _handleAlert,
                   child: const Text('Alert'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    // TODO: Implement freeze functionality
-                  },
-                  child: const Text('Freeze'),
+                  onPressed: _handleFreezeOrUnfreeze,
+                  child: Text(freezeLabel),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                   ),
-                  onPressed: () {
-                    // TODO: Implement ban functionality
-                  },
+                  onPressed: _handleBan,
                   child: const Text('Ban'),
                 ),
               ],
             ),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => OtherUserProfilePage(
-                      userId: widget.userData['id'], // <- IMPORTANT
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.person),
-              label: const Text('View Profile'),
-            ),
+            const SizedBox(height: 10),
           ],
         ),
       ),

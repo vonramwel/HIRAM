@@ -1,7 +1,8 @@
 // lib/reported_listing/reported_listings_card.dart
 import 'package:flutter/material.dart';
-import '../../../listing/model/listing_model.dart';
+import '../../../../listing/model/listing_model.dart';
 import 'reported_listings_service.dart';
+import '../actions/admin_listing_actions.dart';
 
 class ReportedListingsCard extends StatefulWidget {
   final String listingId;
@@ -22,6 +23,7 @@ class ReportedListingsCard extends StatefulWidget {
 class _ReportedListingsCardState extends State<ReportedListingsCard> {
   Listing? _listing;
   String? _ownerName;
+  String? _ownerId;
   bool _isLoading = true;
 
   final ReportedListingsService _service = ReportedListingsService();
@@ -39,6 +41,7 @@ class _ReportedListingsCardState extends State<ReportedListingsCard> {
       setState(() {
         _listing = result['listing'];
         _ownerName = result['ownerName'];
+        _ownerId = result['ownerId'];
         _isLoading = false;
       });
     } catch (e) {
@@ -98,7 +101,52 @@ class _ReportedListingsCardState extends State<ReportedListingsCard> {
             Text('Reason: ${widget.reason}'),
           ],
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        trailing: PopupMenuButton<String>(
+          onSelected: (String choice) {
+            switch (choice) {
+              case 'Alert':
+                if (_ownerId != null) {
+                  AdminListingActions.showAlert(
+                    context: context,
+                    receiverId: _ownerId!,
+                    listing: _listing!,
+                    reason: widget.reason,
+                  );
+                }
+                break;
+              case 'ToggleHide':
+                if (_listing != null && _ownerId != null) {
+                  AdminListingActions.toggleHideListing(
+                    context: context,
+                    listing: _listing!,
+                    listingId: widget.listingId,
+                    ownerId: _ownerId!,
+                    reason: widget.reason,
+                  );
+                }
+                break;
+              case 'Delete':
+                if (_listing != null && _ownerId != null) {
+                  AdminListingActions.deleteListing(
+                    context: context,
+                    listing: _listing!,
+                    listingId: widget.listingId,
+                    ownerId: _ownerId!,
+                    reason: widget.reason,
+                  );
+                }
+                break;
+            }
+          },
+          itemBuilder: (BuildContext context) => [
+            const PopupMenuItem(value: 'Alert', child: Text('Alert')),
+            PopupMenuItem(
+              value: 'ToggleHide',
+              child: Text(_listing!.visibility == 'hidden' ? 'Unhide' : 'Hide'),
+            ),
+            const PopupMenuItem(value: 'Delete', child: Text('Delete')),
+          ],
+        ),
         onTap: widget.onTap,
       ),
     );

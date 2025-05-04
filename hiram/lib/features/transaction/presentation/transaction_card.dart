@@ -20,8 +20,14 @@ class TransactionCard extends StatefulWidget {
 }
 
 class _TransactionCardState extends State<TransactionCard> {
-  String userName = 'Loading...';
-  String userLabel = 'User'; // Default label
+  String otherUserName = 'Loading...';
+  String userLabel = 'User';
+  bool isOtherUserLocked = false;
+
+  bool isOwnerLocked = false;
+  bool isRenterLocked = false;
+  bool isOtherUserBanned = false;
+
   final DatabaseMethods _databaseMethods = DatabaseMethods();
   final AuthMethods _authMethods = AuthMethods();
 
@@ -29,21 +35,36 @@ class _TransactionCardState extends State<TransactionCard> {
     return DateFormat('MM-dd-yyyy hh:mm a').format(dateTime.toLocal());
   }
 
-  Future<void> _fetchUserName(String userId) async {
+  Future<void> _fetchBanStatus(String ownerId, String renterId) async {
     try {
-      Map<String, dynamic>? userData =
-          await _databaseMethods.getUserData(userId);
-      if (mounted) {
-        setState(() {
-          userName = userData?['name'] ?? 'Unknown User';
-        });
-      }
+      final ownerData = await _databaseMethods.getUserData(ownerId);
+      final renterData = await _databaseMethods.getUserData(renterId);
+
+      final ownerStatus = ownerData?['accountStatus'] ?? '';
+      final renterStatus = renterData?['accountStatus'] ?? '';
+
+      setState(() {
+        isOwnerLocked = ownerStatus == 'locked';
+        isRenterLocked = renterStatus == 'locked';
+      });
+
+      final currentUserId = await _authMethods.getCurrentUserId();
+      final isCurrentUserOwner = currentUserId == ownerId;
+      final otherUserData = isCurrentUserOwner ? renterData : ownerData;
+      final otherUserStatus = otherUserData?['accountStatus'] ?? '';
+
+      setState(() {
+        otherUserName = otherUserData?['name'] ?? 'Unknown User';
+        userLabel = isCurrentUserOwner ? 'Renter' : 'Owner';
+        isOtherUserLocked = otherUserStatus == 'locked';
+        isOtherUserBanned = otherUserStatus == 'banned';
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          userName = 'Error loading user';
-        });
-      }
+      setState(() {
+        otherUserName = 'Error loading user';
+        isOtherUserLocked = false;
+        isOtherUserBanned = false;
+      });
     }
   }
 
@@ -70,136 +91,213 @@ class _TransactionCardState extends State<TransactionCard> {
         }
 
         final listingData = snapshot.data!.data() as Map<String, dynamic>;
-        final List<dynamic>? images = listingData['images'] as List<dynamic>?;
-        final String imageUrl =
+        final images = listingData['images'] as List<dynamic>?;
+        final imageUrl =
             (images != null && images.isNotEmpty) ? images[0] as String : '';
+        final listingTitle = listingData['title'] ?? 'Listing Title';
+        final ownerId = listingData['userId'] ?? '';
+        final renterId = widget.transaction.renterId;
 
-        final String listingTitle = listingData['title'] ?? 'Listing Title';
-        final String ownerId = listingData['userId'] ?? '';
-        final String renterId = widget.transaction.renterId ?? '';
+        final isDeleted = listingData['visibility'] == "deleted";
+        final isHidden = listingData['visibility'] == "hidden";
 
-        // Fetch owner or renter name based on the current user
-        if (userName == 'Loading...' &&
-            (ownerId.isNotEmpty || renterId.isNotEmpty)) {
-          _authMethods.getCurrentUserId().then((currentUserId) {
-            final String userToFetch =
-                currentUserId == ownerId ? renterId : ownerId;
-            setState(() {
-              userLabel = currentUserId == ownerId
-                  ? 'Renter'
-                  : 'Owner'; // Update the label
-            });
-            _fetchUserName(userToFetch);
-          });
+        if (otherUserName == 'Loading...' &&
+            (ownerId.isNotEmpty && renterId.isNotEmpty)) {
+          _fetchBanStatus(ownerId, renterId);
         }
 
         return GestureDetector(
           onTap: widget.onTap,
           child: Container(
             margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
+              ],
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left section: text info
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                // Listing Title + Indicator
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
                         listingTitle,
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
-                        '$userLabel: $userName', // Dynamically display "Owner" or "Renter"
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Start Date: ${formatDateTime(widget.transaction.startDate)}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      Text(
-                        'End Date: ${formatDateTime(widget.transaction.endDate)}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                // Middle section: image with errorBuilder
-                Expanded(
-                  flex: 1,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      color: Colors.grey[200],
-                      height: 60,
-                      width: 60,
-                      child: imageUrl.isNotEmpty
-                          ? Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Center(
-                                      child: Icon(Icons.image, size: 30)),
-                            )
-                          : const Center(child: Icon(Icons.image, size: 30)),
                     ),
-                  ),
+                    if (isDeleted)
+                      _buildTag('DELETED', Colors.red)
+                    else if (isHidden)
+                      _buildTag('HIDDEN', Colors.orange),
+                  ],
                 ),
+                const SizedBox(height: 4),
 
-                const SizedBox(width: 12),
-
-                // Right section: status and total
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'Status:',
-                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                // Username + Ban Status
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$userLabel: $otherUserName',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: isOtherUserLocked || isOtherUserBanned
+                            ? Colors.red
+                            : Colors.grey[700],
                       ),
-                      Text(
-                        widget.transaction.status.toUpperCase(),
-                        style: const TextStyle(
+                    ),
+                    if (isOtherUserBanned) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.warning, color: Colors.red, size: 16),
+                      const Text(
+                        'BANNED',
+                        style: TextStyle(
+                          fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                          color: Colors.red,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                    ] else if (isOtherUserLocked) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.lock, color: Colors.orange, size: 16),
                       const Text(
-                        'Total:',
-                        style: TextStyle(fontSize: 12, color: Colors.black54),
-                      ),
-                      Text(
-                        'PHP ${widget.transaction.totalPrice.toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        'LOCKED',
+                        style: TextStyle(
+                          fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                          color: Colors.orange,
                         ),
                       ),
                     ],
-                  ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Image + Status + Price
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Listing image
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 70,
+                        width: 70,
+                        color: Colors.grey[200],
+                        child: imageUrl.isNotEmpty
+                            ? Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Center(
+                                        child: Icon(Icons.broken_image)),
+                              )
+                            : const Center(child: Icon(Icons.image, size: 30)),
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+                    // Status and Price
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Status
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              widget.transaction.status.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blueAccent,
+                              ),
+                            ),
+                          ),
+
+                          // Price
+                          Row(
+                            children: [
+                              const SizedBox(width: 4),
+                              Text(
+                                'PHP ${widget.transaction.totalPrice.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Date Range
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today,
+                        size: 14, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${formatDateTime(widget.transaction.startDate)} - ${formatDateTime(widget.transaction.endDate)}',
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.black87),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildTag(String label, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'reported_listings_service.dart';
-import '../../../listing/model/listing_model.dart';
-import '../../../listing/presentation/listing_details.dart';
-import '../../../user_profile/presentation/otheruser_page.dart';
+import '../../../../listing/model/listing_model.dart';
+import '../../../../listing/presentation/listing_details.dart';
+import '../../../../user_profile/presentation/otheruser_page.dart';
+import '../actions/admin_listing_actions.dart';
 
 class ReportedListingsDetails extends StatefulWidget {
   final Map<String, dynamic> reportData;
@@ -24,6 +25,7 @@ class _ReportedListingsDetailsState extends State<ReportedListingsDetails> {
   Listing? _listing;
   String? _reporterName;
   bool _isLoading = true;
+  String? _ownerId;
 
   @override
   void initState() {
@@ -36,11 +38,12 @@ class _ReportedListingsDetailsState extends State<ReportedListingsDetails> {
     final reporterId = widget.reportData['reportedBy'];
 
     if (listingId != null) {
-      Listing? fetchedListing =
-          await _reportedListingsService.fetchListing(listingId);
+      final result =
+          await _reportedListingsService.fetchListingAndOwner(listingId);
       if (mounted) {
         setState(() {
-          _listing = fetchedListing;
+          _listing = result['listing'];
+          _ownerId = result['ownerId'];
         });
       }
     }
@@ -131,18 +134,7 @@ class _ReportedListingsDetailsState extends State<ReportedListingsDetails> {
                   const Text('Reason:',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   Text(reason),
-                  const SizedBox(height: 12),
-                  const Text('Reported By:',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(_reporterName ?? 'Loading...'),
-                  const SizedBox(height: 12),
-                  if (reportedAt != null) ...[
-                    const Text('Reported At:',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(
-                        '${reportedAt.day}/${reportedAt.month}/${reportedAt.year} ${reportedAt.hour}:${reportedAt.minute}'),
-                  ],
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
                   if (_listing != null)
                     Center(
                       child: ElevatedButton(
@@ -164,6 +156,20 @@ class _ReportedListingsDetailsState extends State<ReportedListingsDetails> {
                         child: const Text('View Listing'),
                       ),
                     ),
+                  const Divider(
+                    height: 40,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Reported By:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(_reporterName ?? 'Loading...'),
+                  const SizedBox(height: 12),
+                  if (reportedAt != null) ...[
+                    const Text('Reported At:',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                        '${reportedAt.day}/${reportedAt.month}/${reportedAt.year} ${reportedAt.hour}:${reportedAt.minute}'),
+                  ],
                   const SizedBox(height: 16),
                   if (_reporterName != null)
                     Center(
@@ -187,6 +193,80 @@ class _ReportedListingsDetailsState extends State<ReportedListingsDetails> {
                               horizontal: 20, vertical: 12),
                         ),
                       ),
+                    ),
+                  const Divider(
+                    height: 40,
+                  ),
+                  const SizedBox(height: 24),
+                  if (_listing != null && _ownerId != null)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              AdminListingActions.showAlert(
+                                context: context,
+                                receiverId: _ownerId!,
+                                listing: _listing!,
+                                reason: reason,
+                              );
+                            },
+                            icon: const Icon(Icons.warning_amber_rounded),
+                            label: const Text('Alert'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.all(12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              AdminListingActions.toggleHideListing(
+                                context: context,
+                                listing: _listing!,
+                                listingId: _listing!.id,
+                                ownerId: _ownerId!,
+                                reason: reason,
+                              );
+                            },
+                            icon: Icon(_listing!.visibility == 'hidden'
+                                ? Icons.visibility
+                                : Icons.visibility_off),
+                            label: Text(_listing!.visibility == 'hidden'
+                                ? 'Unhide'
+                                : 'Hide'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blueGrey,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.all(12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              AdminListingActions.deleteListing(
+                                context: context,
+                                listing: _listing!,
+                                listingId: _listing!.id,
+                                ownerId: _ownerId!,
+                                reason: reason,
+                              );
+                            },
+                            icon: const Icon(Icons.delete_forever),
+                            label: const Text('Delete'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.all(12),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                 ],
               ),

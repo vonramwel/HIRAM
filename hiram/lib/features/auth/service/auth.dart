@@ -29,6 +29,16 @@ class AuthMethods {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("This account is currently locked."),
         ));
+        return;
+      }
+
+      if (userData?['accountStatus'] == 'banned') {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              "Your account has been banned. You can no longer access the app."),
+        ));
+        await auth.signOut(); // log out banned user
+        return;
       }
 
       if (userData != null && userData['userType'] == 'admin') {
@@ -105,6 +115,17 @@ class AuthMethods {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("This account is currently locked."),
           ));
+          await auth.signOut();
+          return;
+        }
+
+        if (userData?['accountStatus'] == 'banned') {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                "Your account has been banned. You can no longer access the app."),
+          ));
+          await auth.signOut();
+          return;
         }
 
         if (userData != null && userData['userType'] == 'admin') {

@@ -32,6 +32,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
   final DatabaseMethods _databaseMethods = DatabaseMethods();
   bool _hasShownReviewDialog = false;
   List<String> _listingImages = [];
+  bool _isOtherUserLocked = false;
 
   @override
   void initState() {
@@ -70,10 +71,13 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           await _databaseMethods.getUserData(otherUserId);
       setState(() {
         _otherUserName = userData?['name'] ?? 'Unknown User';
+        String? status = userData?['accountStatus'];
+        _isOtherUserLocked = status == 'locked' || status == 'banned';
       });
     } catch (e) {
       setState(() {
         _otherUserName = 'Error loading user';
+        _isOtherUserLocked = false;
       });
     }
   }
@@ -239,7 +243,26 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             const SizedBox(height: 20),
             CustomTextField(
                 label: "$_otherUserLabel Name", value: _otherUserName),
-
+            if (_isOtherUserLocked) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.warning, size: 16, color: Colors.red),
+                  const SizedBox(width: 4),
+                  Text(
+                    // Show different messages for banned vs locked
+                    _isOtherUserLocked && _otherUserName.contains('banned')
+                        ? "This account is banned"
+                        : "This account is locked",
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             if (isOwner && _userId != null) ...[
               const SizedBox(height: 10),
               CustomButton(
@@ -269,7 +292,6 @@ class _TransactionDetailsState extends State<TransactionDetails> {
               value2: formatDateTime(widget.transaction.endDate),
             ),
             const SizedBox(height: 10),
-// Update this part:
             if (widget.transaction.offeredPrice != null) ...[
               CustomTextField(
                 label: "Offered Price",
@@ -277,12 +299,10 @@ class _TransactionDetailsState extends State<TransactionDetails> {
               ),
               const SizedBox(height: 10),
             ],
-
             CustomTextField(label: "Notes", value: widget.transaction.notes),
             const SizedBox(height: 10),
             CustomTextField(label: "Status", value: widget.transaction.status),
             const SizedBox(height: 20),
-
             if (isOwner && isApproved && isStartDateToday) ...[
               CustomButton(
                   label: "Generate Transaction Code",
@@ -319,8 +339,6 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             if (isOwner && isLent && isEndDateToday) ...[
               CustomButton(label: "Input Code", onPressed: _showInputDialog),
             ],
-
-            /// REVIEW BUTTON IF NOT YET SUBMITTED
             if (shouldShowReviewButton) ...[
               const SizedBox(height: 20),
               CustomButton(
@@ -334,7 +352,6 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                       ),
                     ),
                   );
-
                   setState(() {
                     if (_userId == widget.transaction.renterId) {
                       widget.transaction.hasReviewedByRenter = true;

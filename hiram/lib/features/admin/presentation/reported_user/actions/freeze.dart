@@ -15,7 +15,7 @@ class FreezeActions {
       builder: (context) => AlertDialog(
         title: Text('Confirm ${isFreeze ? 'Freeze' : 'Unfreeze'}'),
         content: Text(isFreeze
-            ? 'Are you sure you want to freeze this user\'s account? All their active listings will be hidden.'
+            ? 'Are you sure you want to freeze this user\'s account? All their active listings will be hidden and transactions cancelled.'
             : 'Are you sure you want to unfreeze this user\'s account? All their hidden listings will be made public.'),
         actions: [
           TextButton(
@@ -41,7 +41,7 @@ class FreezeActions {
         'accountStatus': isFreeze ? 'locked' : 'normal',
       });
 
-      // Get user listings
+      // Update listings visibility
       final listings = await firestore
           .collection('listings')
           .where('userId', isEqualTo: userId)
@@ -49,25 +49,44 @@ class FreezeActions {
 
       for (final doc in listings.docs) {
         final data = doc.data();
-        final hasVisibility = data.containsKey('visibility');
+        final visibility = data['visibility'] as String?;
 
         if (isFreeze) {
-          if (!hasVisibility || data['visibility'] == 'public') {
+          if (visibility == null || visibility == 'public') {
             batch.update(doc.reference, {'visibility': 'hidden'});
           }
         } else {
-          if (data['visibility'] == 'hidden') {
+          if (visibility == 'hidden') {
             batch.update(doc.reference, {'visibility': 'public'});
           }
         }
       }
 
+      // Cancel transactions where the user is involved (as renter or owner)
+      if (isFreeze) {
+        final transactions = await firestore
+            .collection('transactions')
+            .where('status', isEqualTo: 'Pending') // Skip already cancelled
+            .get();
+
+        for (final doc in transactions.docs) {
+          final data = doc.data();
+          final renterId = data['renterId'];
+          final ownerId = data['ownerId'];
+
+          if (renterId == userId || ownerId == userId) {
+            batch.update(doc.reference, {'status': 'Cancelled'});
+          }
+        }
+      }
+
+      // Commit all batched operations
       await batch.commit();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(isFreeze
-              ? 'User account has been frozen and listings hidden.'
+              ? 'User account has been frozen, listings hidden, and transactions cancelled.'
               : 'User account has been unfrozen and listings made public.'),
         ),
       );

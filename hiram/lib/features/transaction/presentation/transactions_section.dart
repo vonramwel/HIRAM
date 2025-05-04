@@ -15,7 +15,19 @@ class TransactionsSection extends StatefulWidget {
 class _TransactionsSectionState extends State<TransactionsSection> {
   String? _userId;
   String _selectedStatus = 'Pending';
-  String _selectedView = 'Lender'; // 'Lender' or 'Renter'
+  String _selectedView = 'Lender';
+
+  final List<String> statuses = [
+    'Pending',
+    'In Progress',
+    'Completed',
+    'Cancelled',
+    'Overdue',
+    'Expired Request',
+    'Not Yet Reviewed',
+  ];
+
+  final List<String> views = ['Lender', 'Renter'];
 
   @override
   void initState() {
@@ -33,6 +45,8 @@ class _TransactionsSectionState extends State<TransactionsSection> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return SizedBox(
       width: double.infinity,
       child: Padding(
@@ -41,82 +55,66 @@ class _TransactionsSectionState extends State<TransactionsSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Toggle View Type: Lender / Renter
-              Center(
-                child: ToggleButtons(
-                  isSelected: [
-                    _selectedView == 'Lender',
-                    _selectedView == 'Renter'
-                  ],
-                  onPressed: (index) {
-                    setState(() {
-                      _selectedView = index == 0 ? 'Lender' : 'Renter';
-                    });
-                  },
-                  children: const [
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text('As Lender'),
-                    ),
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text('As Renter'),
-                    ),
-                  ],
+              // View Role Selector
+              _buildSectionCard(
+                title: 'View Transactions As',
+                child: Row(
+                  children: views.map((view) {
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: ChoiceChip(
+                          label: Center(child: Text(view)),
+                          labelStyle: TextStyle(
+                            color: _selectedView == view
+                                ? Colors.white
+                                : theme.colorScheme.primary,
+                          ),
+                          selectedColor: theme.colorScheme.primary,
+                          backgroundColor: theme.colorScheme.surface,
+                          selected: _selectedView == view,
+                          onSelected: (_) {
+                            setState(() => _selectedView = view);
+                          },
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
+
               const SizedBox(height: 20),
 
-              // Toggle Transaction Status
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ToggleButtons(
-                  isSelected: [
-                    _selectedStatus == 'Pending',
-                    _selectedStatus == 'In Progress',
-                    _selectedStatus == 'Completed',
-                    _selectedStatus == 'Cancelled',
-                    _selectedStatus == 'Overdue',
-                    _selectedStatus == 'Expired Request',
-                    _selectedStatus == 'Not Yet Reviewed',
-                  ],
-                  onPressed: (index) {
-                    setState(() {
-                      _selectedStatus = [
-                        'Pending',
-                        'In Progress',
-                        'Completed',
-                        'Cancelled',
-                        'Overdue',
-                        'Expired Request',
-                        'Not Yet Reviewed',
-                      ][index];
-                    });
+              // Status Filter (Dropdown)
+              _buildSectionCard(
+                title: 'Filter by Status',
+                child: DropdownButtonFormField<String>(
+                  value: _selectedStatus,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: statuses.map((status) {
+                    return DropdownMenuItem(
+                      value: status,
+                      child: Text(status),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedStatus = newValue;
+                      });
+                    }
                   },
-                  children: const [
-                    Padding(
-                        padding: EdgeInsets.all(8.0), child: Text('Pending')),
-                    Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('In Progress')),
-                    Padding(
-                        padding: EdgeInsets.all(8.0), child: Text('Completed')),
-                    Padding(
-                        padding: EdgeInsets.all(8.0), child: Text('Cancelled')),
-                    Padding(
-                        padding: EdgeInsets.all(8.0), child: Text('Overdue')),
-                    Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Expired Request')),
-                    Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Not Yet Reviewed')),
-                  ],
                 ),
               ),
-              const SizedBox(height: 10),
+
+              const SizedBox(height: 20),
 
               // Transactions List
               FutureBuilder<String>(
@@ -129,7 +127,8 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                       !userSnapshot.hasData ||
                       userSnapshot.data!.isEmpty) {
                     return const Center(
-                        child: Text('Error fetching user data.'));
+                      child: Text('Error fetching user data.'),
+                    );
                   }
 
                   _userId = userSnapshot.data!;
@@ -146,8 +145,7 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                         return Center(child: Text('Error: ${snapshot.error}'));
                       }
                       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return const Center(
-                            child: Text('No transactions available.'));
+                        return _buildEmptyState();
                       }
 
                       DateTime now = DateTime.now();
@@ -206,14 +204,15 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                       }).toList();
 
                       if (filteredTransactions.isEmpty) {
-                        return const Center(
-                            child: Text('No transactions available.'));
+                        return _buildEmptyState();
                       }
 
-                      return ListView.builder(
+                      return ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: filteredTransactions.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final transaction = filteredTransactions[index];
                           return TransactionCard(
@@ -229,6 +228,55 @@ class _TransactionsSectionState extends State<TransactionsSection> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({required String title, required Widget child}) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.surface,
+      elevation: 2,
+      shadowColor: Colors.black12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: theme.textTheme.titleMedium!.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                )),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48.0),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.inbox_rounded,
+                size: 90, color: theme.colorScheme.primary.withOpacity(0.4)),
+            const SizedBox(height: 16),
+            Text(
+              'No transactions found.',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
         ),
       ),
     );
