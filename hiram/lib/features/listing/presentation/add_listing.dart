@@ -4,8 +4,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../model/listing_model.dart';
 import '../service/listing_service.dart';
 import '../../auth/service/auth.dart';
-import 'dart:io';
 import '../../../data/philippine_locations.dart';
+import '../../../common_widgets/common_widgets.dart';
+import 'dart:io';
 
 class AddListingPage extends StatefulWidget {
   const AddListingPage({super.key});
@@ -128,6 +129,7 @@ class _AddListingPageState extends State<AddListingPage> {
   InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
+      labelStyle: const TextStyle(color: pepperBlack),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
@@ -173,65 +175,64 @@ class _AddListingPageState extends State<AddListingPage> {
                         children: [
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () =>
-                                  setState(() => _type = 'Products for Rent'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _type == 'Products for Rent'
-                                    ? Colors.black
-                                    : Colors.grey[300],
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.grey.shade300,
                                 foregroundColor: _type == 'Products for Rent'
                                     ? Colors.white
                                     : Colors.black,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
+                              onPressed: () =>
+                                  setState(() => _type = 'Products for Rent'),
                               child: const Text('Product'),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () =>
-                                  setState(() => _type = 'Services for Hire'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _type == 'Services for Hire'
-                                    ? Colors.black
-                                    : Colors.grey[300],
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.grey.shade300,
                                 foregroundColor: _type == 'Services for Hire'
                                     ? Colors.white
                                     : Colors.black,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
+                              onPressed: () =>
+                                  setState(() => _type = 'Services for Hire'),
                               child: const Text('Service'),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: _fieldDecoration('Category'),
-                              value: _category,
-                              items: _categories[_type]!
-                                  .map((category) => DropdownMenuItem(
-                                      value: category, child: Text(category)))
-                                  .toList(),
-                              onChanged: (value) =>
-                                  setState(() => _category = value),
-                              validator: (value) =>
-                                  value == null ? 'Select a category' : null,
-                            ),
-                          ),
-                        ],
+                      DropdownButtonFormField<String>(
+                        decoration: _fieldDecoration('Category'),
+                        value: _category,
+                        items: _categories[_type]!
+                            .map((category) => DropdownMenuItem(
+                                value: category, child: Text(category)))
+                            .toList(),
+                        onChanged: (value) => setState(() => _category = value),
+                        validator: (value) =>
+                            value == null ? 'Select a category' : null,
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
                           Flexible(
-                            flex: 2, // Smaller portion
+                            flex: 2,
                             child: TextFormField(
                               decoration: _fieldDecoration('Price'),
                               keyboardType: TextInputType.number,
@@ -249,7 +250,7 @@ class _AddListingPageState extends State<AddListingPage> {
                           ),
                           const SizedBox(width: 12),
                           Flexible(
-                            flex: 3, // Larger portion
+                            flex: 3,
                             child: DropdownButtonFormField<String>(
                               decoration: _fieldDecoration('Price Unit'),
                               value: _priceUnit,
@@ -289,7 +290,6 @@ class _AddListingPageState extends State<AddListingPage> {
                           },
                           onSaved: (value) => _otherTransaction = value,
                         ),
-                      const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         decoration: _fieldDecoration('Region'),
                         value: _selectedRegion,
@@ -343,17 +343,9 @@ class _AddListingPageState extends State<AddListingPage> {
                               value == null ? 'Select a barangay' : null,
                         ),
                       const SizedBox(height: 16),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: _pickImages,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 12),
-                            backgroundColor: Colors.grey[200],
-                            foregroundColor: Colors.black,
-                          ),
-                          child: const Text('Add Images (up to 5)'),
-                        ),
+                      CustomButton(
+                        label: 'Add Images (up to 5)',
+                        onPressed: _pickImages,
                       ),
                       const SizedBox(height: 12),
                       if (_images.isNotEmpty)
@@ -371,20 +363,9 @@ class _AddListingPageState extends State<AddListingPage> {
                               .toList(),
                         ),
                       const SizedBox(height: 20),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: _submitForm,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 40, vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('SUBMIT'),
-                        ),
+                      CustomButton(
+                        label: 'SUBMIT',
+                        onPressed: _submitForm,
                       ),
                     ],
                   ),
