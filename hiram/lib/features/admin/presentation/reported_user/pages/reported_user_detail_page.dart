@@ -158,7 +158,47 @@ class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
               style: const TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
+
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OtherUserProfilePage(
+                      userId: widget.userData['id'],
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.person),
+              label: const Text('View Profile'),
+            ),
+            // const SizedBox(height: 20),
+
+            Expanded(
+              child: ListView(
+                children: [
+                  if (contactInfo.isNotEmpty)
+                    ListTile(
+                      title: const Text('Contact Details'),
+                      subtitle: Text(contactInfo),
+                    ),
+                  ListTile(
+                    title: const Text('Credibility Score'),
+                    subtitle:
+                        Text('${widget.userData['credibilityScore'] ?? 'N/A'}'),
+                  ),
+                  ListTile(
+                    title: const Text('User Rating'),
+                    subtitle: Text(
+                      '${(widget.userData['rating'] ?? 0.0).toStringAsFixed(1)} '
+                      '(${widget.userData['ratingCount'] ?? 0} ratings)',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 40),
             isLoading
                 ? const CircularProgressIndicator()
                 : Column(
@@ -188,30 +228,7 @@ class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
                       ),
                     ],
                   ),
-            const Divider(height: 40),
-            Expanded(
-              child: ListView(
-                children: [
-                  if (contactInfo.isNotEmpty)
-                    ListTile(
-                      title: const Text('Contact Details'),
-                      subtitle: Text(contactInfo),
-                    ),
-                  ListTile(
-                    title: const Text('Credibility Score'),
-                    subtitle:
-                        Text('${widget.userData['credibilityScore'] ?? 'N/A'}'),
-                  ),
-                  ListTile(
-                    title: const Text('User Rating'),
-                    subtitle: Text(
-                      '${(widget.userData['rating'] ?? 0.0).toStringAsFixed(1)} '
-                      '(${widget.userData['ratingCount'] ?? 0} ratings)',
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -233,20 +250,6 @@ class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
               ],
             ),
             const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => OtherUserProfilePage(
-                      userId: widget.userData['id'],
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.person),
-              label: const Text('View Profile'),
-            ),
           ],
         ),
       ),
