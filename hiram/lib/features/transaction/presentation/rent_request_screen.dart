@@ -6,6 +6,7 @@ import '../service/transaction_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../auth/service/database.dart';
 import '../../../common_widgets/common_widgets.dart'; // Importing the custom widgets
+import '../../inbox/presentation/chat_page.dart'; // Importing ChatPage for contact feature
 
 class RentRequestScreen extends StatefulWidget {
   final Listing listing;
@@ -210,18 +211,30 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
     super.dispose();
   }
 
+  void _contactSeller() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatPage(
+          receiverId: widget.listing.userId,
+          receiverName: _postedBy,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rent Request'),
+        title: const Text('Rent'),
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: _contactSeller,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black87,
+                backgroundColor: const Color.fromARGB(255, 39, 39, 39),
                 foregroundColor: Colors.white,
               ),
               child: const Text("Contact Seller"),
@@ -281,7 +294,6 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
                 onChanged: (value) => setState(() => _paymentMethod = value),
               ),
               const SizedBox(height: 10),
-              const SizedBox(height: 10),
               TextFormField(
                 controller: _notesController,
                 decoration: const InputDecoration(labelText: 'Notes'),
@@ -308,7 +320,7 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
                 onPressed: _isSubmitting ? null : _submitRequest,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
-                  backgroundColor: Colors.black87,
+                  backgroundColor: const Color.fromARGB(255, 39, 39, 39),
                   foregroundColor: Colors.white,
                 ),
                 child: _isSubmitting
