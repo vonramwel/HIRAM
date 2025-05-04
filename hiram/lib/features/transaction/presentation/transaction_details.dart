@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import '../service/transaction_service.dart';
 import '../model/transaction_model.dart';
 import '../../auth/service/auth.dart';
@@ -250,7 +249,6 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                   const Icon(Icons.warning, size: 16, color: Colors.red),
                   const SizedBox(width: 4),
                   Text(
-                    // Show different messages for banned vs locked
                     _isOtherUserLocked && _otherUserName.contains('banned')
                         ? "This account is banned"
                         : "This account is locked",
@@ -303,63 +301,129 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             const SizedBox(height: 10),
             CustomTextField(label: "Status", value: widget.transaction.status),
             const SizedBox(height: 20),
+            // Handle button row styles based on conditions
             if (isOwner && isApproved && isStartDateToday) ...[
-              CustomButton(
-                  label: "Generate Transaction Code",
-                  onPressed: _generateTransactionCode),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.6, // Adjust this to 0.5 for 50% width
+                  child: CustomButton(
+                    label: "Generate Transaction Code",
+                    onPressed: _generateTransactionCode,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
               if (_generatedCode != null)
-                Text("Generated Code: $_generatedCode"),
-              CustomButton(
-                  label: "Cancel Transaction",
-                  onPressed: () => _updateTransactionStatus("Cancelled")),
+                Center(child: Text("Generated Code: $_generatedCode")),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.6,
+                  child: CustomButton(
+                    label: "Cancel Transaction",
+                    onPressed: () => _updateTransactionStatus("Cancelled"),
+                  ),
+                ),
+              ),
             ],
             if (isRenter && isApproved && isStartDateToday) ...[
-              CustomButton(label: "Input Code", onPressed: _showInputDialog),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.4,
+                  child: CustomButton(
+                    label: "Input Code",
+                    onPressed: _showInputDialog,
+                  ),
+                ),
+              ),
             ],
             if (isOwner && !isApproved && !isLent && !isCompleted) ...[
-              CustomButton(
-                  label: "Accept",
-                  onPressed: () => _updateTransactionStatus("Approved")),
-              CustomButton(
-                  label: "Decline",
-                  onPressed: () => _updateTransactionStatus("Disapproved")),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: FractionallySizedBox(
+                      widthFactor: 0.4,
+                      child: CustomButton(
+                        label: "Accept",
+                        onPressed: () => _updateTransactionStatus("Approved"),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FractionallySizedBox(
+                      widthFactor: 0.4,
+                      child: CustomButton(
+                        label: "Decline",
+                        onPressed: () =>
+                            _updateTransactionStatus("Disapproved"),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
             if (isRenter && !isApproved && !isLent && !isCompleted) ...[
-              CustomButton(
-                  label: "Cancel Transaction",
-                  onPressed: () => _updateTransactionStatus("Cancelled")),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.4,
+                  child: CustomButton(
+                    label: "Cancel Transaction",
+                    onPressed: () => _updateTransactionStatus("Cancelled"),
+                  ),
+                ),
+              ),
             ],
             if (isRenter && isLent && isEndDateToday) ...[
-              CustomButton(
-                  label: "Generate Transaction Code",
-                  onPressed: _generateTransactionCode),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.6,
+                  child: CustomButton(
+                    label: "Generate Transaction Code",
+                    onPressed: _generateTransactionCode,
+                  ),
+                ),
+              ),
               if (_generatedCode != null)
-                Text("Generated Code: $_generatedCode"),
+                Center(child: Text("Generated Code: $_generatedCode")),
             ],
             if (isOwner && isLent && isEndDateToday) ...[
-              CustomButton(label: "Input Code", onPressed: _showInputDialog),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.4,
+                  child: CustomButton(
+                    label: "Input Code",
+                    onPressed: _showInputDialog,
+                  ),
+                ),
+              ),
             ],
             if (shouldShowReviewButton) ...[
               const SizedBox(height: 20),
-              CustomButton(
-                label: "Leave a Review",
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ReviewScreen(
-                        transaction: widget.transaction,
-                      ),
-                    ),
-                  );
-                  setState(() {
-                    if (_userId == widget.transaction.renterId) {
-                      widget.transaction.hasReviewedByRenter = true;
-                    } else if (_userId == widget.transaction.ownerId) {
-                      widget.transaction.hasReviewedByLender = true;
-                    }
-                  });
-                },
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.4,
+                  child: CustomButton(
+                    label: "Leave a Review",
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ReviewScreen(
+                            transaction: widget.transaction,
+                          ),
+                        ),
+                      );
+                      setState(() {
+                        if (_userId == widget.transaction.renterId) {
+                          widget.transaction.hasReviewedByRenter = true;
+                        } else if (_userId == widget.transaction.ownerId) {
+                          widget.transaction.hasReviewedByLender = true;
+                        }
+                      });
+                    },
+                  ),
+                ),
               ),
             ],
           ],
