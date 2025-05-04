@@ -83,7 +83,7 @@ class _UserProfileState extends State<UserProfile> {
                 value,
                 style: const TextStyle(
                   color: Color(0xFFFFFFFF), // white for values
-                  fontSize: 18,
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -151,7 +151,11 @@ class _UserProfileState extends State<UserProfile> {
               _buildStatCard('Active Transactions', '$_activeTransactions'),
               const SizedBox(width: 8),
               _buildStatCard(
-                  'User Rating', '${_userRating.toStringAsFixed(1)}/ 5.0'),
+                'Rating',
+                _userRating == 0.0
+                    ? 'No Ratings'
+                    : '${_userRating.toStringAsFixed(1)}/5.0',
+              ),
               const SizedBox(width: 8),
               _buildStatCard('Pending Transactions', '$_pendingTransactions'),
             ],

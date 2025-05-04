@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../model/listing_model.dart';
 import '../../auth/service/database.dart';
 import '../../transaction/presentation/rent_request_screen.dart';
@@ -96,6 +96,35 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
     );
   }
 
+  Widget _buildRatingDisplay(double? rating, int? count) {
+    if (count == null || count == 0) {
+      return const Text("No reviews yet");
+    }
+
+    final fullStars = rating!.floor();
+    final halfStar = (rating - fullStars) >= 0.5;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(5, (index) {
+            if (index < fullStars) {
+              return const Icon(Icons.star, color: Colors.amber);
+            } else if (index == fullStars && halfStar) {
+              return const Icon(Icons.star_half, color: Colors.amber);
+            } else {
+              return const Icon(Icons.star_border, color: Colors.amber);
+            }
+          }),
+        ),
+        const SizedBox(height: 5),
+        Text(
+            "Rating: ${rating.toStringAsFixed(2)} (${count} review${count == 1 ? '' : 's'})"),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
@@ -184,33 +213,20 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                 children: [
                   ImageCarousel(imageUrls: _currentListing.images),
                   const SizedBox(height: 10),
-                  Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.star_border),
-                          Icon(Icons.star_border),
-                          Icon(Icons.star_border),
-                          Icon(Icons.star_border),
-                          Icon(Icons.star_border),
-                        ],
-                      ),
-                      const Text("Rating: 4.95"),
-                      const SizedBox(height: 5),
-                      CustomButton(
-                        label: "View Reviews",
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => RenterReviewsPage(
-                                  listingId: _currentListing.id),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                  _buildRatingDisplay(
+                      _currentListing.rating, _currentListing.ratingCount),
+                  const SizedBox(height: 5),
+                  CustomButton(
+                    label: "View Reviews",
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              RenterReviewsPage(listingId: _currentListing.id),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 10),
                   Text(

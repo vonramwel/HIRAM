@@ -131,7 +131,7 @@ class _ListingCardState extends State<ListingCard> {
                               child: Row(
                                 children: [
                                   const Icon(Icons.star,
-                                      size: 14, color: Colors.white),
+                                      size: 14, color: Colors.amber),
                                   const SizedBox(width: 4),
                                   Text(
                                     (updatedListing.rating != null &&
