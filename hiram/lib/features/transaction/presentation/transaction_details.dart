@@ -38,6 +38,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
     super.initState();
     _fetchUserId();
     _fetchListingImages();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.transaction.status == "Completed") {
         _navigateToReviewIfNeeded();
@@ -83,16 +84,17 @@ class _TransactionDetailsState extends State<TransactionDetails> {
 
   Future<void> _fetchListingImages() async {
     try {
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('listing')
+      DocumentSnapshot listingSnapshot = await FirebaseFirestore.instance
+          .collection('listings')
           .doc(widget.transaction.listingId)
           .get();
 
-      List<String> images =
-          List<String>.from(doc['listingImages'] ?? <String>[]);
-      setState(() {
-        _listingImages = images;
-      });
+      if (listingSnapshot.exists) {
+        List<dynamic> images = listingSnapshot.get('images') ?? [];
+        setState(() {
+          _listingImages = List<String>.from(images);
+        });
+      }
     } catch (e) {
       print('Error fetching listing images: $e');
     }
