@@ -42,7 +42,7 @@ class BanActions {
           .get();
 
       for (final doc in listings.docs) {
-        batch.update(doc.reference, {'visibility': 'deleted'});
+        batch.update(doc.reference, {'visibility': 'deleted_admin'});
       }
 
       // 3. Cancel all pending transactions involving the user
