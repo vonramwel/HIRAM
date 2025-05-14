@@ -19,6 +19,7 @@ class Listing {
   String? municipality;
   String? barangay;
   String? visibility; // <-- New field to track if the listing is archived
+  List<Map<String, String>>? bookedSchedules; // <-- Add this
 
   Listing({
     required this.id,
@@ -39,6 +40,7 @@ class Listing {
     this.municipality,
     this.barangay,
     this.visibility, // Default value is false (not archived)
+    this.bookedSchedules, // <-- Add this
   });
 
   Map<String, dynamic> toJson() => {
@@ -60,6 +62,7 @@ class Listing {
         "municipality": municipality,
         "barangay": barangay,
         "visibility": visibility, // <-- Include the new field in the JSON
+        "bookedSchedules": bookedSchedules, // <-- Add this
       };
 
   static Listing fromJson(Map<String, dynamic> json) => Listing(
@@ -81,6 +84,10 @@ class Listing {
         municipality: json["municipality"],
         barangay: json["barangay"],
         visibility: json["visibility"], // <-- Default to false if not present
+        bookedSchedules: json["bookedSchedules"] != null
+            ? List<Map<String, String>>.from((json["bookedSchedules"] as List)
+                .map((item) => Map<String, String>.from(item)))
+            : null,
       );
 
   static Listing fromMap(Map<String, dynamic> map) => fromJson(map);
@@ -104,6 +111,7 @@ class Listing {
     String? municipality,
     String? barangay,
     String? visibility, // <-- Allow updating the archived status
+    List<Map<String, String>>? bookedSchedules, // <-- Add this
   }) {
     return Listing(
       id: id ?? this.id,
@@ -125,6 +133,7 @@ class Listing {
       municipality: municipality ?? this.municipality,
       barangay: barangay ?? this.barangay,
       visibility: visibility ?? this.visibility, // <-- Update archived status
+      bookedSchedules: bookedSchedules ?? this.bookedSchedules, // <-- Add this
     );
   }
 }

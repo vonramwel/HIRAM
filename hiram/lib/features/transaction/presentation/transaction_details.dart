@@ -145,6 +145,20 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           newStatus,
         );
       }
+
+      // ⬇️ Add booking schedule to listing document
+      await FirebaseFirestore.instance
+          .collection('listings')
+          .doc(widget.transaction.listingId)
+          .update({
+        'bookedSchedules': FieldValue.arrayUnion([
+          {
+            'startDate': widget.transaction.startDate.toIso8601String(),
+            'endDate': widget.transaction.endDate.toIso8601String(),
+          }
+        ])
+      });
+
       setState(() {
         widget.transaction.status = newStatus;
       });
