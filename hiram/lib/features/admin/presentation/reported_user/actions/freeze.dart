@@ -52,7 +52,9 @@ class FreezeActions {
         final visibility = data['visibility'] as String?;
 
         if (isFreeze) {
-          if (visibility == null || visibility == 'public') {
+          if (visibility == null ||
+              visibility == 'public' ||
+              visibility == 'visible') {
             batch.update(doc.reference, {'visibility': 'hidden'});
           }
         } else {
