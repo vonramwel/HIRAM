@@ -14,24 +14,39 @@ class TransactionsSection extends StatefulWidget {
 
 class _TransactionsSectionState extends State<TransactionsSection> {
   String? _userId;
-  String _selectedStatus = 'Pending';
+  String _selectedStatus = 'Pending for Approval';
   String _selectedView = 'Lender';
+  String? _subStatus;
 
   final List<String> statuses = [
-    'Pending',
+    'Pending for Approval',
     'In Progress',
     'Completed',
     'Cancelled',
-    'Overdue',
-    'Expired Request',
-    'Not Yet Reviewed',
   ];
+
+  final Map<String, List<String>> subStatusOptions = {
+    'In Progress': ['Approved', 'Lent', 'Overdue'],
+    'Completed': ['Completed', 'Reviewed', 'Not yet reviewed'],
+    'Cancelled': ['Disapproved', 'Expired Request'],
+  };
 
   final List<String> views = ['Lender', 'Renter'];
 
   @override
   void initState() {
     super.initState();
+
+    // Ensure _selectedView defaults to the first view
+    _selectedView = views.first;
+
+    // Ensure _selectedStatus defaults to the first status
+    _selectedStatus = statuses.first;
+
+    // If the selected status has substatus options, choose the first one
+    if (subStatusOptions.containsKey(_selectedStatus)) {
+      _subStatus = subStatusOptions[_selectedStatus]!.first;
+    }
   }
 
   void _navigateToTransactionDetails(TransactionModel transaction) {
@@ -55,7 +70,6 @@ class _TransactionsSectionState extends State<TransactionsSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // View Role Selector
               _buildSectionCard(
                 title: 'View Transactions As',
                 child: Row(
@@ -82,41 +96,71 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                   }).toList(),
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Status Filter (Dropdown)
               _buildSectionCard(
                 title: 'Filter by Status',
-                child: DropdownButtonFormField<String>(
-                  value: _selectedStatus,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _selectedStatus,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      items: statuses.map((status) {
+                        return DropdownMenuItem(
+                          value: status,
+                          child: Text(status),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedStatus = newValue;
+                            _subStatus = subStatusOptions.containsKey(newValue)
+                                ? subStatusOptions[newValue]!.first
+                                : null;
+                          });
+                        }
+                      },
                     ),
-                  ),
-                  items: statuses.map((status) {
-                    return DropdownMenuItem(
-                      value: status,
-                      child: Text(status),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedStatus = newValue;
-                      });
-                    }
-                  },
+                    if (subStatusOptions.containsKey(_selectedStatus))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12.0),
+                        child: Row(
+                          children:
+                              subStatusOptions[_selectedStatus]!.map((sub) {
+                            return Expanded(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4.0),
+                                child: ChoiceChip(
+                                  label: Text(sub, textAlign: TextAlign.center),
+                                  labelStyle: TextStyle(
+                                    color: _subStatus == sub
+                                        ? Colors.white
+                                        : theme.colorScheme.primary,
+                                  ),
+                                  selectedColor: theme.colorScheme.primary,
+                                  backgroundColor: theme.colorScheme.surface,
+                                  selected: _subStatus == sub,
+                                  onSelected: (_) {
+                                    setState(() => _subStatus = sub);
+                                  },
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Transactions List
               FutureBuilder<String>(
                 future: AuthMethods().getCurrentUserId(),
                 builder: (context, userSnapshot) {
@@ -127,8 +171,7 @@ class _TransactionsSectionState extends State<TransactionsSection> {
                       !userSnapshot.hasData ||
                       userSnapshot.data!.isEmpty) {
                     return const Center(
-                      child: Text('Error fetching user data.'),
-                    );
+                        child: Text('Error fetching user data.'));
                   }
 
                   _userId = userSnapshot.data!;
@@ -174,33 +217,39 @@ class _TransactionsSectionState extends State<TransactionsSection> {
 
                         if (!isUserTransaction) return false;
 
-                        bool isOverdue =
-                            t.status == 'Lent' && t.endDate.isBefore(now);
-
-                        switch (_selectedStatus) {
-                          case 'Pending':
-                            return t.status == 'Pending' &&
-                                t.startDate.isAfter(now);
-                          case 'In Progress':
-                            return (t.status == 'Approved' ||
-                                (t.status == 'Lent' && t.endDate.isAfter(now)));
-                          case 'Completed':
-                            return t.status == 'Completed';
-                          case 'Cancelled':
-                            return t.status == 'Cancelled' ||
-                                t.status == 'Disapproved';
-                          case 'Overdue':
-                            return isOverdue;
-                          case 'Expired Request':
-                            return t.status == 'Expired Request';
-                          case 'Not Yet Reviewed':
+                        if (_selectedStatus == 'Pending for Approval') {
+                          return t.status == 'Pending' &&
+                              t.startDate.isAfter(now);
+                        } else if (_selectedStatus == 'In Progress') {
+                          if (_subStatus == null) return false;
+                          if (_subStatus == 'Overdue') {
+                            return t.status == 'Lent' &&
+                                t.endDate.isBefore(now);
+                          }
+                          return t.status == _subStatus;
+                        } else if (_selectedStatus == 'Completed') {
+                          if (_subStatus == null) return false;
+                          if (_subStatus == 'Not yet reviewed') {
                             return t.status == 'Completed' &&
                                 (_selectedView == 'Renter'
                                     ? t.hasReviewedByRenter != true
                                     : t.hasReviewedByLender != true);
-                          default:
-                            return false;
+                          }
+                          if (_subStatus == 'Reviewed') {
+                            return t.status == 'Completed' &&
+                                (_selectedView == 'Renter'
+                                    ? t.hasReviewedByRenter == true
+                                    : t.hasReviewedByLender == true);
+                          }
+                          return t.status == 'Completed';
+                        } else if (_selectedStatus == 'Cancelled') {
+                          if (_subStatus == null) return false;
+                          return t.status == _subStatus ||
+                              (t.status == 'Cancelled' &&
+                                  _subStatus == 'Disapproved');
                         }
+
+                        return false;
                       }).toList();
 
                       if (filteredTransactions.isEmpty) {
