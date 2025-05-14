@@ -31,10 +31,10 @@ class _InboxPageState extends State<InboxPage> {
         .where('participants', arrayContains: currentUser.uid)
         .get();
 
-    final chatIds = snapshot.docs.map((doc) => doc.id).toList();
     final List<Map<String, dynamic>> conversations = [];
 
-    for (var chatId in chatIds) {
+    for (var doc in snapshot.docs) {
+      final chatId = doc.id;
       final messagesSnapshot = await _firestore
           .collection('chats')
           .doc(chatId)
@@ -48,6 +48,9 @@ class _InboxPageState extends State<InboxPage> {
       final lastMessageDoc = messagesSnapshot.docs.first;
       final lastMessage = lastMessageDoc.data();
       final isAlert = lastMessage['isAlert'] == true;
+
+      final seenBy = List<String>.from(lastMessage['seenBy'] ?? []);
+      final isUnread = !seenBy.contains(currentUser.uid);
 
       final userIds = chatId.split('_');
       final otherUserId =
@@ -71,6 +74,7 @@ class _InboxPageState extends State<InboxPage> {
         'lastMessage': lastMessage['text'] ?? '',
         'timestamp': lastMessage['timestamp'],
         'isAlert': isAlert,
+        'isUnread': isUnread,
       });
     }
 
@@ -86,12 +90,49 @@ class _InboxPageState extends State<InboxPage> {
   String formatTime(Timestamp? timestamp) {
     if (timestamp == null) return '';
     final date = timestamp.toDate();
-    return DateFormat.jm().format(date);
+    final now = DateTime.now();
+
+    if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day) {
+      return DateFormat.jm().format(date);
+    } else {
+      return DateFormat.MMMd().format(date);
+    }
+  }
+
+  Future<void> markLastMessageAsRead(String chatId) async {
+    final lastMsgSnapshot = await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .orderBy('timestamp', descending: true)
+        .limit(1)
+        .get();
+
+    if (lastMsgSnapshot.docs.isNotEmpty) {
+      final docId = lastMsgSnapshot.docs.first.id;
+      await _firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .doc(docId)
+          .update({
+        'seenBy': FieldValue.arrayUnion([currentUser.uid])
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Inbox'),
+        centerTitle: true,
+        elevation: 1,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: fetchConversations(),
         builder: (context, snapshot) {
@@ -102,66 +143,40 @@ class _InboxPageState extends State<InboxPage> {
           final conversations = snapshot.data ?? [];
 
           if (conversations.isEmpty) {
-            return const Center(child: Text("No conversations yet."));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.chat_bubble_outline, size: 60, color: Colors.grey),
+                  SizedBox(height: 12),
+                  Text(
+                    "No conversations yet",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
           }
 
-          return ListView.builder(
-            itemCount: conversations.length,
-            itemBuilder: (context, index) {
-              final convo = conversations[index];
-              final imgUrl = convo['imgUrl'] as String?;
-              final name = convo['name'];
-              final lastMessage = convo['lastMessage'];
-              final time = formatTime(convo['timestamp']);
-              final isAlert = convo['isAlert'] == true;
-              final userType = convo['userType'];
-              final isAdmin = userType == 'admin';
+          return RefreshIndicator(
+            onRefresh: () async => setState(() {}),
+            child: ListView.separated(
+              itemCount: conversations.length,
+              separatorBuilder: (context, index) => const Divider(height: 0),
+              itemBuilder: (context, index) {
+                final convo = conversations[index];
+                final imgUrl = convo['imgUrl'] as String?;
+                final name = convo['name'];
+                final lastMessage = convo['lastMessage'];
+                final time = formatTime(convo['timestamp']);
+                final isAlert = convo['isAlert'] == true;
+                final isUnread = convo['isUnread'] == true;
+                final userType = convo['userType'];
+                final isAdmin = userType == 'admin';
 
-              return Container(
-                color: isAdmin ? Colors.blue.shade50 : null,
-                child: ListTile(
-                  leading: Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      CircleAvatar(
-                        backgroundImage: imgUrl != null && imgUrl.isNotEmpty
-                            ? NetworkImage(imgUrl)
-                            : null,
-                        child: (imgUrl == null || imgUrl.isEmpty)
-                            ? const Icon(Icons.person)
-                            : null,
-                      ),
-                      if (isAdmin)
-                        const Icon(
-                          Icons.verified_user,
-                          color: Colors.blue,
-                          size: 16,
-                        ),
-                    ],
-                  ),
-                  title: Text(
-                    name,
-                    style: TextStyle(
-                      fontWeight: isAdmin ? FontWeight.bold : FontWeight.normal,
-                      color: isAdmin ? Colors.blue.shade900 : null,
-                    ),
-                  ),
-                  subtitle: Text(
-                    isAlert ? '[ALERT] $lastMessage' : lastMessage,
-                    style: TextStyle(
-                      fontWeight: isAlert ? FontWeight.bold : FontWeight.normal,
-                      color: isAlert
-                          ? Colors.red
-                          : (isAdmin ? Colors.black87 : Colors.black),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Text(
-                    time,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  onTap: () {
+                return InkWell(
+                  onTap: () async {
+                    await markLastMessageAsRead(convo['chatId']);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -170,11 +185,96 @@ class _InboxPageState extends State<InboxPage> {
                           receiverName: name,
                         ),
                       ),
-                    );
+                    ).then((_) => setState(() {})); // Refresh on return
                   },
-                ),
-              );
-            },
+                  child: Container(
+                    color: isAdmin ? Colors.blue.shade50 : Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundImage: imgUrl != null && imgUrl.isNotEmpty
+                              ? NetworkImage(imgUrl)
+                              : null,
+                          child: imgUrl == null || imgUrl.isEmpty
+                              ? const Icon(Icons.person)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      name,
+                                      style: TextStyle(
+                                        fontWeight: isAdmin
+                                            ? FontWeight.bold
+                                            : FontWeight.w500,
+                                        fontSize: 16,
+                                        color: isAdmin
+                                            ? Colors.blue.shade900
+                                            : Colors.black,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Text(
+                                    time,
+                                    style: const TextStyle(
+                                        fontSize: 12, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      isAlert
+                                          ? '[ALERT] $lastMessage'
+                                          : lastMessage,
+                                      style: TextStyle(
+                                        fontWeight: isAlert || isUnread
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        color: isAlert
+                                            ? Colors.red
+                                            : isUnread
+                                                ? Colors.black
+                                                : Colors.grey.shade700,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (isUnread)
+                                    const Padding(
+                                      padding: EdgeInsets.only(left: 6.0),
+                                      child: Icon(Icons.circle,
+                                          color: Colors.blue, size: 10),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isAdmin)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4),
+                            child: Icon(Icons.verified_user,
+                                size: 18, color: Colors.blue),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           );
         },
       ),

@@ -6,6 +6,8 @@ import '../service/transaction_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../auth/service/database.dart';
 import '../../../common_widgets/common_widgets.dart'; // Importing the custom widgets
+import '../../inbox/presentation/chat_page.dart'; // Importing ChatPage for contact feature
+import '../../../common_widgets/booked_schedule.dart';
 
 class RentRequestScreen extends StatefulWidget {
   final Listing listing;
@@ -65,7 +67,8 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: initialDateTime,
-      firstDate: DateTime.now(),
+      firstDate:
+          isStartDate ? DateTime.now() : (_startDateTime ?? DateTime.now()),
       lastDate: DateTime(2101),
     );
 
@@ -78,13 +81,18 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
       if (pickedTime != null) {
         int hour = pickedTime.hour;
         if (pickedTime.minute > 0) hour++;
-
         final DateTime fullDateTime = DateTime(
           pickedDate.year,
           pickedDate.month,
           pickedDate.day,
           hour,
         );
+
+// Compute proposed range
+        final proposedStart = isStartDate ? fullDateTime : _startDateTime;
+        final proposedEnd = isStartDate ? _endDateTime : fullDateTime;
+
+// Check for overlap
 
         setState(() {
           if (isStartDate) {
@@ -173,6 +181,38 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
       return;
     }
 
+    // ✅ Check for booking conflicts in listing.bookedSchedules
+    final booked = widget.listing.bookedSchedules ?? [];
+
+    bool hasConflict = booked.any((schedule) {
+      final bookedStart = DateTime.tryParse(schedule['startDate'] ?? '');
+      final bookedEnd = DateTime.tryParse(schedule['endDate'] ?? '');
+      if (bookedStart == null || bookedEnd == null) return false;
+
+      return !(_endDateTime!.isBefore(bookedStart) ||
+          _startDateTime!.isAfter(bookedEnd));
+    });
+
+    if (hasConflict) {
+      setState(() => _isSubmitting = false);
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Date Unavailable'),
+          content: const Text(
+              'The selected time range overlaps with an existing booking.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     String? transactionId =
         await _transactionService.getTransactionId(widget.listing.id, userId);
 
@@ -187,7 +227,7 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
       notes: _notesController.text,
       status: 'Pending',
       timestamp: Timestamp.now(),
-      totalPrice: _totalPrice, // keep total price as computed
+      totalPrice: _totalPrice,
       offeredPrice: _offeredPriceController.text.isNotEmpty
           ? double.tryParse(_offeredPriceController.text)
           : null,
@@ -210,18 +250,30 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
     super.dispose();
   }
 
+  void _contactSeller() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatPage(
+          receiverId: widget.listing.userId,
+          receiverName: _postedBy,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rent Request'),
+        title: const Text('Rent'),
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: _contactSeller,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black87,
+                backgroundColor: const Color.fromARGB(255, 39, 39, 39),
                 foregroundColor: Colors.white,
               ),
               child: const Text("Contact Seller"),
@@ -271,6 +323,23 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
                 onTap: () => _selectDateTime(context, false),
               ),
               const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => BookedScheduleDialog(
+                      bookedSchedules: widget.listing.bookedSchedules ?? [],
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: const Color.fromARGB(255, 39, 39, 39),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('View Schedule'),
+              ),
+              const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 value: _paymentMethod,
                 decoration: const InputDecoration(labelText: 'Payment Method'),
@@ -280,7 +349,6 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
                     .toList(),
                 onChanged: (value) => setState(() => _paymentMethod = value),
               ),
-              const SizedBox(height: 10),
               const SizedBox(height: 10),
               TextFormField(
                 controller: _notesController,
@@ -308,7 +376,7 @@ class _RentRequestScreenState extends State<RentRequestScreen> {
                 onPressed: _isSubmitting ? null : _submitRequest,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
-                  backgroundColor: Colors.black87,
+                  backgroundColor: const Color.fromARGB(255, 39, 39, 39),
                   foregroundColor: Colors.white,
                 ),
                 child: _isSubmitting

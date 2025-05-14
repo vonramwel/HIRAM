@@ -5,8 +5,11 @@ import '../../auth/service/database.dart'; // make sure this path is correct
 class RenterReviewDetailsPage extends StatefulWidget {
   final String renterId;
   final String ownerId;
-  const RenterReviewDetailsPage(
-      {super.key, required this.renterId, required this.ownerId});
+  const RenterReviewDetailsPage({
+    super.key,
+    required this.renterId,
+    required this.ownerId,
+  });
 
   @override
   State<RenterReviewDetailsPage> createState() =>
@@ -16,6 +19,7 @@ class RenterReviewDetailsPage extends StatefulWidget {
 class _RenterReviewDetailsPageState extends State<RenterReviewDetailsPage> {
   final DatabaseMethods _databaseMethods = DatabaseMethods();
   String renterName = 'Loading...';
+  Map<String, String> lenderNames = {}; // Cache for lender names
 
   @override
   void initState() {
@@ -26,7 +30,7 @@ class _RenterReviewDetailsPageState extends State<RenterReviewDetailsPage> {
   Future<void> _loadRenterName() async {
     try {
       Map<String, dynamic>? renterData =
-          await _databaseMethods.getUserData(widget.ownerId);
+          await _databaseMethods.getUserData(widget.renterId);
       setState(() {
         renterName = renterData?['name'] ?? 'Unknown Renter';
       });
@@ -37,10 +41,25 @@ class _RenterReviewDetailsPageState extends State<RenterReviewDetailsPage> {
     }
   }
 
+  Future<String> _getLenderName(String lenderId) async {
+    if (lenderNames.containsKey(lenderId)) {
+      return lenderNames[lenderId]!;
+    }
+
+    try {
+      Map<String, dynamic>? data = await _databaseMethods.getUserData(lenderId);
+      final name = data?['name'] ?? 'Unknown Lender';
+      lenderNames[lenderId] = name;
+      return name;
+    } catch (e) {
+      return 'Error loading name';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Reviews for User")),
+      appBar: AppBar(title: Text("Reviews for $renterName")),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('Reviews')
@@ -61,34 +80,43 @@ class _RenterReviewDetailsPageState extends State<RenterReviewDetailsPage> {
             itemCount: reviews.length,
             itemBuilder: (context, index) {
               final review = reviews[index].data() as Map<String, dynamic>;
+              final lenderId = review['lenderId'];
 
-              return Card(
-                margin: const EdgeInsets.all(10),
-                elevation: 3,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        renterName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+              return FutureBuilder<String>(
+                future: _getLenderName(lenderId),
+                builder: (context, snapshot) {
+                  final lenderName = snapshot.data ?? 'Loading...';
+
+                  return Card(
+                    margin: const EdgeInsets.all(10),
+                    elevation: 3,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            lenderName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Row(
+                            children: List.generate(
+                              review['rating'] ?? 0,
+                              (i) =>
+                                  const Icon(Icons.star, color: Colors.amber),
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(review['comment'] ?? ''),
+                        ],
                       ),
-                      const SizedBox(height: 5),
-                      Row(
-                        children: List.generate(
-                          review['rating'] ?? 0,
-                          (i) => const Icon(Icons.star, color: Colors.amber),
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(review['comment'] ?? ''),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               );
             },
           );

@@ -35,6 +35,29 @@ class _TransactionCardState extends State<TransactionCard> {
     return DateFormat('MM-dd-yyyy hh:mm a').format(dateTime.toLocal());
   }
 
+  String getUrgencyTag(DateTime startDate, DateTime endDate) {
+    final now = DateTime.now();
+    Duration diff;
+
+    if (now.isBefore(startDate)) {
+      diff = startDate.difference(now);
+    } else if (now.isBefore(endDate)) {
+      diff = endDate.difference(now);
+    } else {
+      return 'Expired';
+    }
+
+    if (diff.inMinutes < 60) {
+      return '${diff.inMinutes} min left';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours} hrs left';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays} days left';
+    } else {
+      return 'More than a week';
+    }
+  }
+
   Future<void> _fetchBanStatus(String ownerId, String renterId) async {
     try {
       final ownerData = await _databaseMethods.getUserData(ownerId);
@@ -105,6 +128,11 @@ class _TransactionCardState extends State<TransactionCard> {
             (ownerId.isNotEmpty && renterId.isNotEmpty)) {
           _fetchBanStatus(ownerId, renterId);
         }
+
+        final urgency = getUrgencyTag(
+          widget.transaction.startDate,
+          widget.transaction.endDate,
+        );
 
         return GestureDetector(
           onTap: widget.onTap,
@@ -190,7 +218,7 @@ class _TransactionCardState extends State<TransactionCard> {
 
                 const SizedBox(height: 12),
 
-                // Image + Status + Price
+                // Image + Status + Price + Urgency
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -217,31 +245,30 @@ class _TransactionCardState extends State<TransactionCard> {
 
                     // Status and Price
                     Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          // Status
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              widget.transaction.status.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blueAccent,
-                              ),
-                            ),
-                          ),
-
-                          // Price
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const SizedBox(width: 4),
+                              // Status
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  widget.transaction.status.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blueAccent,
+                                  ),
+                                ),
+                              ),
+                              // Price
                               Text(
                                 'PHP ${widget.transaction.totalPrice.toStringAsFixed(0)}',
                                 style: const TextStyle(
@@ -251,6 +278,22 @@ class _TransactionCardState extends State<TransactionCard> {
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 6),
+
+                          // Urgency Tag
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _buildTag(
+                              urgency,
+                              urgency == 'Expired'
+                                  ? Colors.grey
+                                  : urgency.contains('min')
+                                      ? Colors.red
+                                      : urgency.contains('hrs')
+                                          ? Colors.orange
+                                          : Colors.green,
+                            ),
                           ),
                         ],
                       ),

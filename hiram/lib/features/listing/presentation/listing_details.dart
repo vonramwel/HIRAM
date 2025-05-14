@@ -216,17 +216,26 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                   _buildRatingDisplay(
                       _currentListing.rating, _currentListing.ratingCount),
                   const SizedBox(height: 5),
-                  CustomButton(
-                    label: "View Reviews",
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              RenterReviewsPage(listingId: _currentListing.id),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: FractionallySizedBox(
+                        widthFactor: 0.5,
+                        child: CustomButton(
+                          label: "View Reviews",
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RenterReviewsPage(
+                                    listingId: _currentListing.id),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -281,19 +290,27 @@ class _ListingDetailsPageState extends State<ListingDetailsPage> {
                   ),
                   const SizedBox(height: 20),
                   if (!_isOwner) ...[
-                    CustomButton(
-                      label: "Rent",
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                RentRequestScreen(listing: _currentListing),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: FractionallySizedBox(
+                          widthFactor: 0.9,
+                          child: CustomButton(
+                            label: "Rent",
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => RentRequestScreen(
+                                      listing: _currentListing),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 10),
                   ],
                 ],
               ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import '../service/transaction_service.dart';
 import '../model/transaction_model.dart';
 import '../../auth/service/auth.dart';
@@ -12,6 +11,7 @@ import 'generated_code_dialog.dart';
 import 'input_code_dialog.dart';
 import '../../review/presentation/user_reviews_page.dart';
 import '../../report/presentation/report_transaction.dart';
+import '../../../common_widgets/booked_schedule.dart';
 
 class TransactionDetails extends StatefulWidget {
   final TransactionModel transaction;
@@ -33,12 +33,15 @@ class _TransactionDetailsState extends State<TransactionDetails> {
   bool _hasShownReviewDialog = false;
   List<String> _listingImages = [];
   bool _isOtherUserLocked = false;
+  List<Map<String, String>> bookedSchedules = [];
 
   @override
   void initState() {
     super.initState();
     _fetchUserId();
     _fetchListingImages();
+    _fetchBookedSchedules();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.transaction.status == "Completed") {
         _navigateToReviewIfNeeded();
@@ -52,6 +55,42 @@ class _TransactionDetailsState extends State<TransactionDetails> {
       _userId = userId;
     });
     _fetchOtherUserName(userId);
+  }
+
+  Future<void> _fetchBookedSchedules() async {
+    try {
+      final listingDoc = await FirebaseFirestore.instance
+          .collection('listings')
+          .doc(widget.transaction.listingId)
+          .get();
+
+      if (listingDoc.exists) {
+        List<dynamic> schedules = listingDoc.data()?['bookedSchedules'] ?? [];
+
+        setState(() {
+          bookedSchedules = schedules
+              .map<Map<String, String>>(
+                  (item) => Map<String, String>.from(item))
+              .toList();
+        });
+      }
+    } catch (e) {
+      print('Error fetching booked schedules: $e');
+    }
+  }
+
+  bool _isOverlapping(
+      DateTime newStart, DateTime newEnd, List<dynamic> bookedSchedules) {
+    for (var schedule in bookedSchedules) {
+      final DateTime existingStart = DateTime.parse(schedule['startDate']);
+      final DateTime existingEnd = DateTime.parse(schedule['endDate']);
+
+      // Check if ranges overlap
+      if (newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _fetchOtherUserName(String? currentUserId) async {
@@ -84,16 +123,17 @@ class _TransactionDetailsState extends State<TransactionDetails> {
 
   Future<void> _fetchListingImages() async {
     try {
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('listing')
+      DocumentSnapshot listingSnapshot = await FirebaseFirestore.instance
+          .collection('listings')
           .doc(widget.transaction.listingId)
           .get();
 
-      List<String> images =
-          List<String>.from(doc['listingImages'] ?? <String>[]);
-      setState(() {
-        _listingImages = images;
-      });
+      if (listingSnapshot.exists) {
+        List<dynamic> images = listingSnapshot.get('images') ?? [];
+        setState(() {
+          _listingImages = List<String>.from(images);
+        });
+      }
     } catch (e) {
       print('Error fetching listing images: $e');
     }
@@ -125,6 +165,24 @@ class _TransactionDetailsState extends State<TransactionDetails> {
 
   Future<void> _updateTransactionStatus(String newStatus) async {
     if (newStatus == 'Approved') {
+      final listingDoc = await FirebaseFirestore.instance
+          .collection('listings')
+          .doc(widget.transaction.listingId)
+          .get();
+
+      bookedSchedules = (listingDoc.data()?['bookedSchedules'] ?? [])
+          .map<Map<String, String>>((item) => Map<String, String>.from(item))
+          .toList();
+
+      if (_isOverlapping(widget.transaction.startDate,
+          widget.transaction.endDate, bookedSchedules)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('This schedule overlaps with an existing booking.')),
+        );
+        return; // prevent further approval
+      }
       if (widget.transaction.offeredPrice != null) {
         await _transactionService.updateTransactionStatusAndTotalPrice(
           widget.transaction.transactionId,
@@ -144,6 +202,20 @@ class _TransactionDetailsState extends State<TransactionDetails> {
           newStatus,
         );
       }
+
+      // ⬇️ Add booking schedule to listing document
+      await FirebaseFirestore.instance
+          .collection('listings')
+          .doc(widget.transaction.listingId)
+          .update({
+        'bookedSchedules': FieldValue.arrayUnion([
+          {
+            'startDate': widget.transaction.startDate.toIso8601String(),
+            'endDate': widget.transaction.endDate.toIso8601String(),
+          }
+        ])
+      });
+
       setState(() {
         widget.transaction.status = newStatus;
       });
@@ -250,7 +322,6 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                   const Icon(Icons.warning, size: 16, color: Colors.red),
                   const SizedBox(width: 4),
                   Text(
-                    // Show different messages for banned vs locked
                     _isOtherUserLocked && _otherUserName.contains('banned')
                         ? "This account is banned"
                         : "This account is locked",
@@ -292,6 +363,23 @@ class _TransactionDetailsState extends State<TransactionDetails> {
               value2: formatDateTime(widget.transaction.endDate),
             ),
             const SizedBox(height: 10),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => BookedScheduleDialog(
+                    bookedSchedules: bookedSchedules ?? [],
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: const Color.fromARGB(255, 39, 39, 39),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('View Schedule'),
+            ),
             if (widget.transaction.offeredPrice != null) ...[
               CustomTextField(
                 label: "Offered Price",
@@ -303,63 +391,129 @@ class _TransactionDetailsState extends State<TransactionDetails> {
             const SizedBox(height: 10),
             CustomTextField(label: "Status", value: widget.transaction.status),
             const SizedBox(height: 20),
+            // Handle button row styles based on conditions
             if (isOwner && isApproved && isStartDateToday) ...[
-              CustomButton(
-                  label: "Generate Transaction Code",
-                  onPressed: _generateTransactionCode),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.6, // Adjust this to 0.5 for 50% width
+                  child: CustomButton(
+                    label: "Generate Transaction Code",
+                    onPressed: _generateTransactionCode,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
               if (_generatedCode != null)
-                Text("Generated Code: $_generatedCode"),
-              CustomButton(
-                  label: "Cancel Transaction",
-                  onPressed: () => _updateTransactionStatus("Cancelled")),
+                Center(child: Text("Generated Code: $_generatedCode")),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.6,
+                  child: CustomButton(
+                    label: "Cancel Transaction",
+                    onPressed: () => _updateTransactionStatus("Cancelled"),
+                  ),
+                ),
+              ),
             ],
             if (isRenter && isApproved && isStartDateToday) ...[
-              CustomButton(label: "Input Code", onPressed: _showInputDialog),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.4,
+                  child: CustomButton(
+                    label: "Input Code",
+                    onPressed: _showInputDialog,
+                  ),
+                ),
+              ),
             ],
             if (isOwner && !isApproved && !isLent && !isCompleted) ...[
-              CustomButton(
-                  label: "Accept",
-                  onPressed: () => _updateTransactionStatus("Approved")),
-              CustomButton(
-                  label: "Decline",
-                  onPressed: () => _updateTransactionStatus("Disapproved")),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: FractionallySizedBox(
+                      widthFactor: 0.4,
+                      child: CustomButton(
+                        label: "Accept",
+                        onPressed: () => _updateTransactionStatus("Approved"),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FractionallySizedBox(
+                      widthFactor: 0.4,
+                      child: CustomButton(
+                        label: "Decline",
+                        onPressed: () =>
+                            _updateTransactionStatus("Disapproved"),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
             if (isRenter && !isApproved && !isLent && !isCompleted) ...[
-              CustomButton(
-                  label: "Cancel Transaction",
-                  onPressed: () => _updateTransactionStatus("Cancelled")),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.4,
+                  child: CustomButton(
+                    label: "Cancel Transaction",
+                    onPressed: () => _updateTransactionStatus("Cancelled"),
+                  ),
+                ),
+              ),
             ],
             if (isRenter && isLent && isEndDateToday) ...[
-              CustomButton(
-                  label: "Generate Transaction Code",
-                  onPressed: _generateTransactionCode),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.6,
+                  child: CustomButton(
+                    label: "Generate Transaction Code",
+                    onPressed: _generateTransactionCode,
+                  ),
+                ),
+              ),
               if (_generatedCode != null)
-                Text("Generated Code: $_generatedCode"),
+                Center(child: Text("Generated Code: $_generatedCode")),
             ],
             if (isOwner && isLent && isEndDateToday) ...[
-              CustomButton(label: "Input Code", onPressed: _showInputDialog),
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.4,
+                  child: CustomButton(
+                    label: "Input Code",
+                    onPressed: _showInputDialog,
+                  ),
+                ),
+              ),
             ],
             if (shouldShowReviewButton) ...[
               const SizedBox(height: 20),
-              CustomButton(
-                label: "Leave a Review",
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ReviewScreen(
-                        transaction: widget.transaction,
-                      ),
-                    ),
-                  );
-                  setState(() {
-                    if (_userId == widget.transaction.renterId) {
-                      widget.transaction.hasReviewedByRenter = true;
-                    } else if (_userId == widget.transaction.ownerId) {
-                      widget.transaction.hasReviewedByLender = true;
-                    }
-                  });
-                },
+              Center(
+                child: FractionallySizedBox(
+                  widthFactor: 0.4,
+                  child: CustomButton(
+                    label: "Leave a Review",
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ReviewScreen(
+                            transaction: widget.transaction,
+                          ),
+                        ),
+                      );
+                      setState(() {
+                        if (_userId == widget.transaction.renterId) {
+                          widget.transaction.hasReviewedByRenter = true;
+                        } else if (_userId == widget.transaction.ownerId) {
+                          widget.transaction.hasReviewedByLender = true;
+                        }
+                      });
+                    },
+                  ),
+                ),
               ),
             ],
           ],

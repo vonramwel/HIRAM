@@ -29,6 +29,11 @@ class AuthMethods {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("This account is currently locked."),
         ));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => Navigation()), // ← Pass a flag
+        );
         return;
       }
 
@@ -115,7 +120,11 @@ class AuthMethods {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("This account is currently locked."),
           ));
-          await auth.signOut();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => Navigation()), // ← Pass a flag
+          );
           return;
         }
 

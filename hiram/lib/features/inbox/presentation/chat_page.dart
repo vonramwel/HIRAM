@@ -19,6 +19,8 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
   final currentUser = FirebaseAuth.instance.currentUser!;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -30,6 +32,13 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
     chatId = getChatId(currentUser.uid, widget.receiverId);
     fetchReceiverUserType();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   String getChatId(String user1, String user2) {
@@ -108,9 +117,22 @@ class _ChatPageState extends State<ChatPage> {
     return doc.data();
   }
 
+  void scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text("Chat with ${widget.receiverName}"),
       ),
@@ -132,7 +154,13 @@ class _ChatPageState extends State<ChatPage> {
                 final messages = snapshot.data!.docs;
                 String? lastDateLabel;
 
+                // Auto-scroll to bottom when new message is added
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  scrollToBottom();
+                });
+
                 return ListView.builder(
+                  controller: _scrollController,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
@@ -141,8 +169,7 @@ class _ChatPageState extends State<ChatPage> {
                     final senderId = messageData['senderId'];
                     final timestamp = messageData['timestamp'] as Timestamp?;
                     final isMe = senderId == currentUser.uid;
-                    final isAlert = messageData.containsKey('isAlert') &&
-                        messageData['isAlert'] == true;
+                    final isAlert = messageData['isAlert'] == true;
 
                     final messageTime = timestamp?.toDate();
                     final timeString = messageTime != null
@@ -172,8 +199,6 @@ class _ChatPageState extends State<ChatPage> {
 
                             Color? backgroundColor;
                             Color textColor = Colors.black87;
-                            BorderRadiusGeometry borderRadius =
-                                BorderRadius.circular(16);
                             Icon? alertIcon;
 
                             if (isAlert) {

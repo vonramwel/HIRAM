@@ -15,7 +15,7 @@ class DeleteListingHandler {
   }) async {
     // Update listing visibility to 'deleted'
     await _firestore.collection('listings').doc(listingId).update({
-      'visibility': 'deleted',
+      'visibility': 'deleted_admin',
     });
 
     // Cancel all pending transactions

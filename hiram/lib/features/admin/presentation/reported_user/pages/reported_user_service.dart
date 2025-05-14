@@ -2,7 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminUserService {
   static Stream<QuerySnapshot> getReportedUsersStream() {
-    return FirebaseFirestore.instance.collection('user_reports').snapshots();
+    return FirebaseFirestore.instance
+        .collection('user_reports')
+        .orderBy('timestamp', descending: true) // <-- sort by newest first
+        .snapshots();
   }
 
   static Future<Map<String, dynamic>?> getUserDataById(String userId) async {
