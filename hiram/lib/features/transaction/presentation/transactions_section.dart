@@ -36,14 +36,8 @@ class _TransactionsSectionState extends State<TransactionsSection> {
   @override
   void initState() {
     super.initState();
-
-    // Ensure _selectedView defaults to the first view
     _selectedView = views.first;
-
-    // Ensure _selectedStatus defaults to the first status
     _selectedStatus = statuses.first;
-
-    // If the selected status has substatus options, choose the first one
     if (subStatusOptions.containsKey(_selectedStatus)) {
       _subStatus = subStatusOptions[_selectedStatus]!.first;
     }
@@ -251,6 +245,16 @@ class _TransactionsSectionState extends State<TransactionsSection> {
 
                         return false;
                       }).toList();
+
+                      // ✅ Sort based on urgency (soonest startDate or endDate first)
+                      filteredTransactions.sort((a, b) {
+                        if (a.status == 'Pending' || a.status == 'Approved') {
+                          return a.startDate.compareTo(b.startDate);
+                        } else if (a.status == 'Lent') {
+                          return a.endDate.compareTo(b.endDate);
+                        }
+                        return 0; // For non-urgent types, retain original order
+                      });
 
                       if (filteredTransactions.isEmpty) {
                         return _buildEmptyState();
