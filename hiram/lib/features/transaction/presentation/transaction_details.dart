@@ -11,6 +11,7 @@ import 'generated_code_dialog.dart';
 import 'input_code_dialog.dart';
 import '../../review/presentation/user_reviews_page.dart';
 import '../../report/presentation/report_transaction.dart';
+import '../../../common_widgets/booked_schedule.dart';
 
 class TransactionDetails extends StatefulWidget {
   final TransactionModel transaction;
@@ -32,12 +33,14 @@ class _TransactionDetailsState extends State<TransactionDetails> {
   bool _hasShownReviewDialog = false;
   List<String> _listingImages = [];
   bool _isOtherUserLocked = false;
+  List<Map<String, String>> bookedSchedules = [];
 
   @override
   void initState() {
     super.initState();
     _fetchUserId();
     _fetchListingImages();
+    _fetchBookedSchedules();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.transaction.status == "Completed") {
@@ -52,6 +55,42 @@ class _TransactionDetailsState extends State<TransactionDetails> {
       _userId = userId;
     });
     _fetchOtherUserName(userId);
+  }
+
+  Future<void> _fetchBookedSchedules() async {
+    try {
+      final listingDoc = await FirebaseFirestore.instance
+          .collection('listings')
+          .doc(widget.transaction.listingId)
+          .get();
+
+      if (listingDoc.exists) {
+        List<dynamic> schedules = listingDoc.data()?['bookedSchedules'] ?? [];
+
+        setState(() {
+          bookedSchedules = schedules
+              .map<Map<String, String>>(
+                  (item) => Map<String, String>.from(item))
+              .toList();
+        });
+      }
+    } catch (e) {
+      print('Error fetching booked schedules: $e');
+    }
+  }
+
+  bool _isOverlapping(
+      DateTime newStart, DateTime newEnd, List<dynamic> bookedSchedules) {
+    for (var schedule in bookedSchedules) {
+      final DateTime existingStart = DateTime.parse(schedule['startDate']);
+      final DateTime existingEnd = DateTime.parse(schedule['endDate']);
+
+      // Check if ranges overlap
+      if (newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _fetchOtherUserName(String? currentUserId) async {
@@ -126,6 +165,24 @@ class _TransactionDetailsState extends State<TransactionDetails> {
 
   Future<void> _updateTransactionStatus(String newStatus) async {
     if (newStatus == 'Approved') {
+      final listingDoc = await FirebaseFirestore.instance
+          .collection('listings')
+          .doc(widget.transaction.listingId)
+          .get();
+
+      bookedSchedules = (listingDoc.data()?['bookedSchedules'] ?? [])
+          .map<Map<String, String>>((item) => Map<String, String>.from(item))
+          .toList();
+
+      if (_isOverlapping(widget.transaction.startDate,
+          widget.transaction.endDate, bookedSchedules)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('This schedule overlaps with an existing booking.')),
+        );
+        return; // prevent further approval
+      }
       if (widget.transaction.offeredPrice != null) {
         await _transactionService.updateTransactionStatusAndTotalPrice(
           widget.transaction.transactionId,
@@ -306,6 +363,23 @@ class _TransactionDetailsState extends State<TransactionDetails> {
               value2: formatDateTime(widget.transaction.endDate),
             ),
             const SizedBox(height: 10),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => BookedScheduleDialog(
+                    bookedSchedules: bookedSchedules ?? [],
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: const Color.fromARGB(255, 39, 39, 39),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('View Schedule'),
+            ),
             if (widget.transaction.offeredPrice != null) ...[
               CustomTextField(
                 label: "Offered Price",
