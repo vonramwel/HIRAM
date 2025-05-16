@@ -183,11 +183,11 @@ class _ReportedUserDetailPageState extends State<ReportedUserDetailPage> {
                       title: const Text('Contact Details'),
                       subtitle: Text(contactInfo),
                     ),
-                  ListTile(
-                    title: const Text('Credibility Score'),
-                    subtitle:
-                        Text('${widget.userData['credibilityScore'] ?? 'N/A'}'),
-                  ),
+                  // ListTile(
+                  //   title: const Text('Credibility Score'),
+                  //   subtitle:
+                  //       Text('${widget.userData['credibilityScore'] ?? 'N/A'}'),
+                  // ),
                   ListTile(
                     title: const Text('User Rating'),
                     subtitle: Text(

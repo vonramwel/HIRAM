@@ -402,6 +402,11 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                   ),
                 ),
               ),
+              const SizedBox(height: 5),
+              Text(
+                'Input the generated code to the other user\'s device to confirm the transaction.',
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 10),
               if (_generatedCode != null)
                 Center(child: Text("Generated Code: $_generatedCode")),
@@ -425,6 +430,11 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                   ),
                 ),
               ),
+              const SizedBox(height: 5),
+              Text(
+                'Input the generated code from other user\'s device to confirm the transaction.',
+                textAlign: TextAlign.center,
+              )
             ],
             if (isOwner && !isApproved && !isLent && !isCompleted) ...[
               Row(
@@ -464,7 +474,7 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                 ),
               ),
             ],
-            if (isRenter && isLent && isEndDateToday) ...[
+            if (isRenter && isLent) ...[
               Center(
                 child: FractionallySizedBox(
                   widthFactor: 0.6,
@@ -474,10 +484,15 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                   ),
                 ),
               ),
+              const SizedBox(height: 5),
+              Text(
+                'Input the generated code to the other user\'s device to confirm the transaction.',
+                textAlign: TextAlign.center,
+              ),
               if (_generatedCode != null)
                 Center(child: Text("Generated Code: $_generatedCode")),
             ],
-            if (isOwner && isLent && isEndDateToday) ...[
+            if (isOwner && isLent) ...[
               Center(
                 child: FractionallySizedBox(
                   widthFactor: 0.4,
@@ -486,6 +501,11 @@ class _TransactionDetailsState extends State<TransactionDetails> {
                     onPressed: _showInputDialog,
                   ),
                 ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                'Input the generated code to the other user\'s device to confirm the transaction.',
+                textAlign: TextAlign.center,
               ),
             ],
             if (shouldShowReviewButton) ...[
